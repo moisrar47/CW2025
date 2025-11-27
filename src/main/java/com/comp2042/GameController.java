@@ -1,5 +1,7 @@
 package com.comp2042;
 
+import com.comp2042.view.GuiController;
+
 public class GameController implements InputEventListener {
 
     private Board board = new SimpleBoard(25, 10);
