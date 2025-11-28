@@ -6,7 +6,6 @@ import com.comp2042.MoveEvent;
 import com.comp2042.EventType;
 import com.comp2042.EventSource;
 import com.comp2042.DownData;
-import com.comp2042.NotificationPanel;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
