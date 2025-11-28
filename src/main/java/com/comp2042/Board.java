@@ -1,5 +1,7 @@
 package com.comp2042;
 
+import com.comp2042.model.Score;
+
 public interface Board {
 
     boolean moveBrickDown();
