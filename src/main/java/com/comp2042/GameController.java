@@ -1,5 +1,7 @@
 package com.comp2042;
 
+import com.comp2042.model.DownData;
+import com.comp2042.model.ViewData;
 import com.comp2042.view.GuiController;
 
 public class GameController implements InputEventListener {
