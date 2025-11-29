@@ -1,7 +1,7 @@
 package com.comp2042.controller;
 
 import com.comp2042.Board;
-import com.comp2042.ClearRow;
+import com.comp2042.model.ClearRow;
 import com.comp2042.EventSource;
 import com.comp2042.InputEventListener;
 import com.comp2042.MoveEvent;

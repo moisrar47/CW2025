@@ -1,5 +1,6 @@
 package com.comp2042;
 
+import com.comp2042.model.ClearRow;
 import com.comp2042.model.Score;
 import com.comp2042.model.ViewData;
 
