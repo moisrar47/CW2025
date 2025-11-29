@@ -1,7 +1,5 @@
 package com.comp2042.model;
 
-import com.comp2042.MatrixOperations;
-
 public final class ViewData {
 
     private final int[][] brickData;
