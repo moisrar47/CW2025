@@ -12,7 +12,10 @@ import com.comp2042.view.GuiController;
 
 public class GameController implements InputEventListener {
 
-    private Board board = new SimpleBoard(25, 10);
+    private static final int BOARD_ROWS = 25;
+    private static final int BOARD_COLUMNS = 10;
+
+    private Board board = new SimpleBoard(BOARD_ROWS, BOARD_COLUMNS);
 
     private final GuiController viewGuiController;
 
