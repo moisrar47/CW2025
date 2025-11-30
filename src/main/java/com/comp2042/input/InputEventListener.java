@@ -1,4 +1,4 @@
-package com.comp2042;
+package com.comp2042.input;
 
 import com.comp2042.model.DownData;
 import com.comp2042.model.ViewData;

@@ -2,9 +2,9 @@ package com.comp2042.controller;
 
 import com.comp2042.model.Board;
 import com.comp2042.model.ClearRow;
-import com.comp2042.EventSource;
-import com.comp2042.InputEventListener;
-import com.comp2042.MoveEvent;
+import com.comp2042.input.EventSource;
+import com.comp2042.input.InputEventListener;
+import com.comp2042.input.MoveEvent;
 import com.comp2042.model.SimpleBoard;
 import com.comp2042.model.DownData;
 import com.comp2042.model.ViewData;
