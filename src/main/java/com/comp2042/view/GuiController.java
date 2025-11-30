@@ -116,9 +116,8 @@ public class GuiController implements Initializable {
                 brickPanel.add(rectangle, j, i);
             }
         }
-        brickPanel.setLayoutX(gamePanel.getLayoutX() + brick.getxPosition() * brickPanel.getVgap() + brick.getxPosition() * BRICK_SIZE);
-        brickPanel.setLayoutY(-42 + gamePanel.getLayoutY() + brick.getyPosition() * brickPanel.getHgap() + brick.getyPosition() * BRICK_SIZE);
 
+        updateBrickPanelPosition(brick);
 
         timeLine = new Timeline(new KeyFrame(
                 Duration.millis(400),
@@ -162,11 +161,23 @@ public class GuiController implements Initializable {
         return returnPaint;
     }
 
+    private void updateBrickPanelPosition(ViewData brick) {
+        brickPanel.setLayoutX(
+            gamePanel.getLayoutX()
+                + brick.getxPosition() * brickPanel.getVgap()
+                + brick.getxPosition() * BRICK_SIZE
+        );
+
+        brickPanel.setLayoutY(
+            -42 + gamePanel.getLayoutY()
+                + brick.getyPosition() * brickPanel.getHgap()
+                + brick.getyPosition() * BRICK_SIZE
+        );
+    }
 
     private void refreshBrick(ViewData brick) {
         if (isPause.getValue() == Boolean.FALSE) {
-            brickPanel.setLayoutX(gamePanel.getLayoutX() + brick.getxPosition() * brickPanel.getVgap() + brick.getxPosition() * BRICK_SIZE);
-            brickPanel.setLayoutY(-42 + gamePanel.getLayoutY() + brick.getyPosition() * brickPanel.getHgap() + brick.getyPosition() * BRICK_SIZE);
+            updateBrickPanelPosition(brick);
             for (int i = 0; i < brick.getBrickData().length; i++) {
                 for (int j = 0; j < brick.getBrickData()[i].length; j++) {
                     setRectangleData(brick.getBrickData()[i][j], rectangles[i][j]);
