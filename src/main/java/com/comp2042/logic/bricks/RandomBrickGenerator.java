@@ -12,6 +12,10 @@ public class RandomBrickGenerator implements BrickGenerator {
 
     private final Deque<Brick> nextBricks = new ArrayDeque<>();
 
+    private Brick randomBrick() {
+        return brickList.get(ThreadLocalRandom.current().nextInt(brickList.size()));
+    }
+
     public RandomBrickGenerator() {
         brickList = new ArrayList<>();
         brickList.add(new IBrick());
@@ -21,14 +25,15 @@ public class RandomBrickGenerator implements BrickGenerator {
         brickList.add(new SBrick());
         brickList.add(new TBrick());
         brickList.add(new ZBrick());
-        nextBricks.add(brickList.get(ThreadLocalRandom.current().nextInt(brickList.size())));
-        nextBricks.add(brickList.get(ThreadLocalRandom.current().nextInt(brickList.size())));
+
+        nextBricks.add(randomBrick());
+        nextBricks.add(randomBrick());
     }
 
     @Override
     public Brick getBrick() {
         if (nextBricks.size() <= 1) {
-            nextBricks.add(brickList.get(ThreadLocalRandom.current().nextInt(brickList.size())));
+            nextBricks.add(randomBrick());
         }
         return nextBricks.poll();
     }
