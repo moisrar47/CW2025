@@ -32,48 +32,39 @@ public class SimpleBoard implements Board {
         score = new Score();
     }
 
-    @Override
-    public boolean moveBrickDown() {
+    private boolean tryMoveBrick(int deltaX, int deltaY) {
         int[][] currentMatrix = MatrixOperations.copy(currentGameMatrix);
-        Point p = new Point(currentOffset);
-        p.translate(0, 1);
-        boolean conflict = MatrixOperations.intersect(currentMatrix, brickRotator.getCurrentShape(), (int) p.getX(), (int) p.getY());
+        Point newOffset = new Point(currentOffset);
+        newOffset.translate(deltaX, deltaY);
+        boolean conflict = MatrixOperations.intersect(
+            currentMatrix,
+            brickRotator.getCurrentShape(),
+            (int) newOffset.getX(),
+            (int) newOffset.getY()
+        );
         if (conflict) {
             return false;
         } else {
-            currentOffset = p;
+            currentOffset = newOffset;
             return true;
         }
     }
 
+    @Override
+    public boolean moveBrickDown() {
+        return tryMoveBrick(0, 1);
+    }
 
     @Override
     public boolean moveBrickLeft() {
-        int[][] currentMatrix = MatrixOperations.copy(currentGameMatrix);
-        Point p = new Point(currentOffset);
-        p.translate(-1, 0);
-        boolean conflict = MatrixOperations.intersect(currentMatrix, brickRotator.getCurrentShape(), (int) p.getX(), (int) p.getY());
-        if (conflict) {
-            return false;
-        } else {
-            currentOffset = p;
-            return true;
-        }
+        return tryMoveBrick(-1, 0);
     }
 
     @Override
     public boolean moveBrickRight() {
-        int[][] currentMatrix = MatrixOperations.copy(currentGameMatrix);
-        Point p = new Point(currentOffset);
-        p.translate(1, 0);
-        boolean conflict = MatrixOperations.intersect(currentMatrix, brickRotator.getCurrentShape(), (int) p.getX(), (int) p.getY());
-        if (conflict) {
-            return false;
-        } else {
-            currentOffset = p;
-            return true;
-        }
+        return tryMoveBrick(1, 0);
     }
+
 
     @Override
     public boolean rotateLeftBrick() {
