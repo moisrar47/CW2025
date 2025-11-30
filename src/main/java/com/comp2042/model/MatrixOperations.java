@@ -28,12 +28,17 @@ public class MatrixOperations {
     }
 
     private static boolean checkOutOfBound(int[][] matrix, int targetX, int targetY) {
-        boolean returnValue = true;
-        if (targetX >= 0 && targetY < matrix.length && targetX < matrix[targetY].length) {
-            returnValue = false;
-        }
-        return returnValue;
+        /* Out of bounds if:
+         - X is negative
+         - Y is negative
+         - Y is beyond last row
+         - X is beyond last column in that row */
+        return targetX < 0
+            || targetY < 0
+            || targetY >= matrix.length
+            || targetX >= matrix[targetY].length;
     }
+
 
     public static int[][] copy(int[][] original) {
         int[][] myInt = new int[original.length][];
@@ -61,35 +66,47 @@ public class MatrixOperations {
     }
 
     public static ClearRow checkRemoving(final int[][] matrix) {
-        int[][] tmp = new int[matrix.length][matrix[0].length];
-        Deque<int[]> newRows = new ArrayDeque<>();
+        int rowCount = matrix.length;
+        int columnCount = matrix[0].length;
+
+        int[][] newMatrix = new int[rowCount][columnCount];
+        Deque<int[]> remainingRows = new ArrayDeque<>();
         List<Integer> clearedRows = new ArrayList<>();
 
-        for (int i = 0; i < matrix.length; i++) {
-            int[] tmpRow = new int[matrix[i].length];
-            boolean rowToClear = true;
-            for (int j = 0; j < matrix[0].length; j++) {
-                if (matrix[i][j] == 0) {
-                    rowToClear = false;
+        // Identify full rows and collect the others
+        for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+            int[] currentRow = matrix[rowIndex];
+            int[] rowCopy = new int[currentRow.length];
+
+            boolean isFullRow = true;
+            for (int col = 0; col < currentRow.length; col++) {
+                int cell = currentRow[col];
+                if (cell == 0) {
+                    isFullRow = false;
                 }
-                tmpRow[j] = matrix[i][j];
+                rowCopy[col] = cell;
             }
-            if (rowToClear) {
-                clearedRows.add(i);
+
+            if (isFullRow) {
+                clearedRows.add(rowIndex);
             } else {
-                newRows.add(tmpRow);
+                remainingRows.add(rowCopy);
             }
         }
-        for (int i = matrix.length - 1; i >= 0; i--) {
-            int[] row = newRows.pollLast();
-            if (row != null) {
-                tmp[i] = row;
-            } else {
+
+        // Rebuild matrix from bottom up with remaining rows
+        for (int rowIndex = rowCount - 1; rowIndex >= 0; rowIndex--) {
+            int[] row = remainingRows.pollLast();
+            if (row == null) {
                 break;
             }
+            newMatrix[rowIndex] = row;
         }
-        int scoreBonus = 50 * clearedRows.size() * clearedRows.size();
-        return new ClearRow(clearedRows.size(), tmp, scoreBonus);
+
+        int clearedCount = clearedRows.size();
+        int scoreBonus = 50 * clearedCount * clearedCount;
+
+        return new ClearRow(clearedCount, newMatrix, scoreBonus);
     }
 
     public static List<int[][]> deepCopyList(List<int[][]> list){
