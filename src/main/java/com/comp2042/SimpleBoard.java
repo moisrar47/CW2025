@@ -12,6 +12,9 @@ import java.awt.*;
 
 public class SimpleBoard implements Board {
 
+    private static final int SPAWN_X = 4;
+    private static final int SPAWN_Y = 10;
+
     private final int width;
     private final int height;
     private final BrickGenerator brickGenerator;
@@ -89,7 +92,7 @@ public class SimpleBoard implements Board {
     public boolean createNewBrick() {
         Brick currentBrick = brickGenerator.getBrick();
         brickRotator.setBrick(currentBrick);
-        currentOffset = new Point(4, 10);
+        currentOffset = new Point(SPAWN_X, SPAWN_Y);
         return MatrixOperations.intersect(currentGameMatrix, brickRotator.getCurrentShape(), (int) currentOffset.getX(), (int) currentOffset.getY());
     }
 
