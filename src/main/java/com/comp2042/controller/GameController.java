@@ -27,27 +27,34 @@ public class GameController implements InputEventListener {
         viewGuiController.bindScore(board.getScore().scoreProperty());
     }
 
+    private ClearRow handleBrickLanded() {
+        board.mergeBrickToBackground();
+        ClearRow clearRow = board.clearRows();
+
+        if (clearRow.getLinesRemoved() > 0) {
+            board.getScore().add(clearRow.getScoreBonus());
+        }
+
+        if (board.createNewBrick()) {
+            viewGuiController.gameOver();
+        }
+
+        viewGuiController.refreshGameBackground(board.getBoardMatrix());
+
+        return clearRow;
+    }
+
     @Override
     public DownData onDownEvent(MoveEvent event) {
         boolean canMove = board.moveBrickDown();
         ClearRow clearRow = null;
+
         if (!canMove) {
-            board.mergeBrickToBackground();
-            clearRow = board.clearRows();
-            if (clearRow.getLinesRemoved() > 0) {
-                board.getScore().add(clearRow.getScoreBonus());
-            }
-            if (board.createNewBrick()) {
-                viewGuiController.gameOver();
-            }
-
-            viewGuiController.refreshGameBackground(board.getBoardMatrix());
-
-        } else {
-            if (event.getEventSource() == EventSource.USER) {
-                board.getScore().add(1);
-            }
+            clearRow = handleBrickLanded();
+        } else if (event.getEventSource() == EventSource.USER) {
+            board.getScore().add(1);
         }
+
         return new DownData(clearRow, board.getViewData());
     }
 
