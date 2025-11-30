@@ -9,26 +9,32 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.net.URL;
-import java.util.ResourceBundle;
 
 public class Main extends Application {
 
+    private static final String GAME_LAYOUT_FXML = "gameLayout.fxml";
+    private static final String WINDOW_TITLE = "TetrisJFX";
+    private static final int SCENE_WIDTH = 300;
+    private static final int SCENE_HEIGHT = 510;
+
     @Override
     public void start(Stage primaryStage) throws Exception {
+        URL layoutUrl = getClass().getClassLoader().getResource(GAME_LAYOUT_FXML);
+        if (layoutUrl == null) {
+            throw new IllegalStateException("Cannot find " + GAME_LAYOUT_FXML + " on the classpath");
+        }
 
-        URL location = getClass().getClassLoader().getResource("gameLayout.fxml");
-        ResourceBundle resources = null;
-        FXMLLoader fxmlLoader = new FXMLLoader(location, resources);
+        FXMLLoader fxmlLoader = new FXMLLoader(layoutUrl);
         Parent root = fxmlLoader.load();
-        GuiController c = fxmlLoader.getController();
+        GuiController guiController = fxmlLoader.getController();
 
-        primaryStage.setTitle("TetrisJFX");
-        Scene scene = new Scene(root, 300, 510);
+        primaryStage.setTitle(WINDOW_TITLE);
+        Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
         primaryStage.setScene(scene);
         primaryStage.show();
-        new GameController(c);
-    }
 
+        new GameController(guiController);
+    }
 
     public static void main(String[] args) {
         launch(args);
