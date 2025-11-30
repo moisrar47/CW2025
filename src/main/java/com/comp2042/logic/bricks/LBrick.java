@@ -1,13 +1,9 @@
 package com.comp2042.logic.bricks;
 
-import com.comp2042.model.MatrixOperations;
-
 import java.util.ArrayList;
 import java.util.List;
 
-final class LBrick implements Brick {
-
-    private final List<int[][]> brickMatrix = new ArrayList<>();
+final class LBrick extends AbstractBrick {
 
     public LBrick() {
         brickMatrix.add(new int[][]{
@@ -36,8 +32,4 @@ final class LBrick implements Brick {
         });
     }
 
-    @Override
-    public List<int[][]> getShapeMatrix() {
-        return MatrixOperations.deepCopyList(brickMatrix);
-    }
 }
