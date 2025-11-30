@@ -32,6 +32,9 @@ import java.util.ResourceBundle;
 public class GuiController implements Initializable {
 
     private static final int BRICK_SIZE = 20;
+    private static final int HIDDEN_TOP_ROWS = 2;  // top rows aren't shown to player
+    private static final int BRICK_PANEL_Y_OFFSET = -42;
+    private static final int DROP_INTERVAL_MS = 400;
 
     @FXML
     private GridPane gamePanel;
@@ -98,12 +101,12 @@ public class GuiController implements Initializable {
 
     public void initGameView(int[][] boardMatrix, ViewData brick) {
         displayMatrix = new Rectangle[boardMatrix.length][boardMatrix[0].length];
-        for (int i = 2; i < boardMatrix.length; i++) {
+        for (int i = HIDDEN_TOP_ROWS; i < boardMatrix.length; i++) {
             for (int j = 0; j < boardMatrix[i].length; j++) {
                 Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
                 rectangle.setFill(Color.TRANSPARENT);
                 displayMatrix[i][j] = rectangle;
-                gamePanel.add(rectangle, j, i - 2);
+                gamePanel.add(rectangle, j, i - HIDDEN_TOP_ROWS);
             }
         }
 
@@ -120,8 +123,8 @@ public class GuiController implements Initializable {
         updateBrickPanelPosition(brick);
 
         timeLine = new Timeline(new KeyFrame(
-                Duration.millis(400),
-                ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))
+            Duration.millis(DROP_INTERVAL_MS),
+            ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))
         ));
         timeLine.setCycleCount(Timeline.INDEFINITE);
         timeLine.play();
@@ -169,7 +172,7 @@ public class GuiController implements Initializable {
         );
 
         brickPanel.setLayoutY(
-            -42 + gamePanel.getLayoutY()
+            BRICK_PANEL_Y_OFFSET + gamePanel.getLayoutY()
                 + brick.getyPosition() * brickPanel.getHgap()
                 + brick.getyPosition() * BRICK_SIZE
         );
@@ -187,7 +190,7 @@ public class GuiController implements Initializable {
     }
 
     public void refreshGameBackground(int[][] board) {
-        for (int i = 2; i < board.length; i++) {
+        for (int i = HIDDEN_TOP_ROWS; i < board.length; i++) {
             for (int j = 0; j < board[i].length; j++) {
                 setRectangleData(board[i][j], displayMatrix[i][j]);
             }
