@@ -1,4 +1,4 @@
-package com.comp2042;
+package com.comp2042.app;
 
 import com.comp2042.controller.GameController;
 import com.comp2042.view.GuiController;
