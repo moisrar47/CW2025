@@ -25,6 +25,8 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.util.Duration;
+import javafx.scene.layout.BorderPane;
+import javafx.geometry.Pos;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -47,6 +49,9 @@ public class GuiController implements Initializable {
 
     @FXML
     private GameOverPanel gameOverPanel;
+
+    @FXML
+    private BorderPane gameBoard;
 
     private Rectangle[][] displayMatrix;
 
@@ -97,6 +102,16 @@ public class GuiController implements Initializable {
         reflection.setFraction(0.8);
         reflection.setTopOpacity(0.9);
         reflection.setTopOffset(-12);
+
+        // anchor the grid to the bottom of the cyan BorderPane
+        BorderPane.setAlignment(gamePanel, Pos.BOTTOM_CENTER);
+
+        gamePanel.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                gameBoard.prefWidthProperty().bind(newScene.widthProperty());
+                gameBoard.prefHeightProperty().bind(newScene.heightProperty());
+            }
+        });
     }
 
     public void initGameView(int[][] boardMatrix, ViewData brick) {

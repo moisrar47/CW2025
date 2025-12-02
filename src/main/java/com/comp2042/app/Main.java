@@ -14,8 +14,8 @@ public class Main extends Application {
 
     private static final String GAME_LAYOUT_FXML = "gameLayout.fxml";
     private static final String WINDOW_TITLE = "TetrisJFX";
-    private static final int SCENE_WIDTH = 300;
-    private static final int SCENE_HEIGHT = 510;
+    private static final int SCENE_WIDTH = 360;
+    private static final int SCENE_HEIGHT = 640;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -31,6 +31,11 @@ public class Main extends Application {
         primaryStage.setTitle(WINDOW_TITLE);
         Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
         primaryStage.setScene(scene);
+
+        // lock the window size and centre it
+        primaryStage.setResizable(false);
+        primaryStage.centerOnScreen();
+
         primaryStage.show();
 
         new GameController(guiController);

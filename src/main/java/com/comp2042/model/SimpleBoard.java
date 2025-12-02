@@ -8,8 +8,8 @@ import java.awt.*;
 
 public class SimpleBoard implements Board {
 
-    private static final int SPAWN_X = 4;
-    private static final int SPAWN_Y = 10;
+    private static final int SPAWN_X = 6;
+    private static final int SPAWN_Y = 1;
 
     private final int width;
     private final int height;
