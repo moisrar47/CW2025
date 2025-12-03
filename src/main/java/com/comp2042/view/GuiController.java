@@ -110,6 +110,10 @@ public class GuiController implements Initializable {
                     groupNotification.getChildren().add(notificationPanel);
                     notificationPanel.showScore(groupNotification.getChildren());
                 } */
+                if (keyEvent.getCode() == KeyCode.SPACE) {
+                    hardDrop();
+                    keyEvent.consume();
+                }
             }
         });
         gameOverPanel.setVisible(false);
@@ -307,6 +311,34 @@ public class GuiController implements Initializable {
             }
             refreshBrick(downData.getViewData());
         }
+        gamePanel.requestFocus();
+    }
+
+    private void hardDrop() {
+        // Don’t do anything if paused or game over
+        if (isPause.getValue() == Boolean.TRUE || isGameOver.getValue() == Boolean.TRUE) {
+            return;
+        }
+
+        DownData downData;
+
+        do {
+            downData = eventListener.onDownEvent(
+                new MoveEvent(EventType.DOWN, EventSource.USER)
+            );
+        } while (downData.getClearRow() == null);
+
+        // If we actually cleared any lines, show the floating +score popup
+        if (downData.getClearRow().getLinesRemoved() > 0) {
+            NotificationPanel notificationPanel =
+                new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
+            groupNotification.getChildren().add(notificationPanel);
+            notificationPanel.showScore(groupNotification.getChildren());
+        }
+
+        // refresh the active brick view (this will now be the newly spawned piece)
+        refreshBrick(downData.getViewData());
+
         gamePanel.requestFocus();
     }
 
