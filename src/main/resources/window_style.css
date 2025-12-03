@@ -1,5 +1,5 @@
 .root {
-    -fx-background-image: url("background_image.png");
+    -fx-background-color: #000000; /* solid black */
 }
 
 .nextBrick {
@@ -9,10 +9,13 @@
 }
 
 .gameBoard {
-    -fx-border-color: linear-gradient(#2A5058, #61a2b1);
-    -fx-border-width: 12px;
-    -fx-border-radius: 12px;
+    /* No visible frame as it was earlier, now just a solid black background for the well */
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+    -fx-border-radius: 0;
+    -fx-background-color: black;
 }
+
 
 .nextBrickLabel {
     -fx-font-family: "Let's go Digital";
