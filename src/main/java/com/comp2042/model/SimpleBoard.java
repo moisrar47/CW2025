@@ -46,6 +46,35 @@ public class SimpleBoard implements Board {
         }
     }
 
+    /*
+      this essentially computes the Y coordinate where the current brick would land
+      if it were dropped straight right down from its current position
+     */
+    private int getGhostYPosition() {
+        int x = (int) currentOffset.getX();
+        int y = (int) currentOffset.getY();
+
+        int[][] shape = brickRotator.getCurrentShape();
+
+        int ghostY = y;
+
+        while (true) {
+            int nextY = ghostY + 1;
+            boolean conflict = MatrixOperations.intersect(
+                currentGameMatrix,
+                shape,
+                x,
+                nextY
+            );
+            if (conflict) {
+                break; // last non conflicting position is the landing row
+            }
+            ghostY = nextY;
+        }
+
+        return ghostY;
+    }
+
     @Override
     public boolean moveBrickDown() {
         return tryMoveBrick(0, 1);
@@ -99,7 +128,14 @@ public class SimpleBoard implements Board {
 
     @Override
     public ViewData getViewData() {
-        return new ViewData(brickRotator.getCurrentShape(), (int) currentOffset.getX(), (int) currentOffset.getY(), brickGenerator.getNextBrick().getShapeMatrix().get(0));
+        int ghostY = getGhostYPosition();
+        return new ViewData(
+            brickRotator.getCurrentShape(),
+            (int) currentOffset.getX(),
+            (int) currentOffset.getY(),
+            ghostY,
+            brickGenerator.getNextBrick().getShapeMatrix().get(0)
+        );
     }
 
     @Override

@@ -15,6 +15,7 @@
             <center>
                 <StackPane alignment="TOP_LEFT">
                     <GridPane fx:id="gamePanel" hgap="1" vgap="1"/>
+                    <Pane fx:id="ghostPanel"/>
                     <Pane fx:id="brickPanel"/>
                 </StackPane>
             </center>

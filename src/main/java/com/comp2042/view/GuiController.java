@@ -55,6 +55,9 @@ public class GuiController implements Initializable {
     private Pane brickPanel;
 
     @FXML
+    private Pane ghostPanel;
+
+    @FXML
     private Label scoreLabel;
 
     @FXML
@@ -68,6 +71,7 @@ public class GuiController implements Initializable {
     private InputEventListener eventListener;
 
     private Rectangle[][] rectangles;
+    private Rectangle[][] ghostRectangles;
 
     private Timeline timeLine;
 
@@ -157,6 +161,17 @@ public class GuiController implements Initializable {
             }
         }
 
+        // ghost outline uses the same 4x4 structure
+        ghostRectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
+        for (int i = 0; i < brick.getBrickData().length; i++) {
+            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
+                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                rectangle.setVisible(false); // start hidden
+                ghostRectangles[i][j] = rectangle;
+                ghostPanel.getChildren().add(rectangle);
+            }
+        }
+
         // positions the active brick after the layout pass to avoid the initial "flash" issue
         Platform.runLater(() -> refreshBrick(brick));
 
@@ -233,14 +248,16 @@ public class GuiController implements Initializable {
             int[][] data = brick.getBrickData();
             int baseX = brick.getxPosition();
             int baseY = brick.getyPosition();
+            int ghostBaseY = brick.getGhostYPosition();
 
+            // 1) Active falling piece
             for (int i = 0; i < data.length; i++) {
                 for (int j = 0; j < data[i].length; j++) {
                     Rectangle rectangle = rectangles[i][j];
                     int color = data[i][j];
 
                     if (color == 0) {
-                        //hide empty cells of the 4x4 matrix
+                        // hide empty cells of the 4x4 matrix
                         setActiveBrickRectangleData(0, rectangle);
                         rectangle.setVisible(false);
                         continue;
@@ -266,6 +283,38 @@ public class GuiController implements Initializable {
                     rectangle.setTranslateX(cellBounds.getMinX());
                     rectangle.setTranslateY(cellBounds.getMinY());
                     setActiveBrickRectangleData(color, rectangle);
+                }
+            }
+
+            // 2) Ghost landing outline
+            for (int i = 0; i < data.length; i++) {
+                for (int j = 0; j < data[i].length; j++) {
+                    Rectangle ghostRect = ghostRectangles[i][j];
+                    int color = data[i][j];
+
+                    if (color == 0) {
+                        ghostRect.setVisible(false);
+                        continue;
+                    }
+
+                    int boardX = baseX + j;
+                    int boardY = ghostBaseY + i;
+
+                    if (boardY < HIDDEN_TOP_ROWS ||
+                        boardY >= displayMatrix.length ||
+                        boardX < 0 ||
+                        boardX >= displayMatrix[0].length) {
+                        ghostRect.setVisible(false);
+                        continue;
+                    }
+
+                    Rectangle cell = displayMatrix[boardY][boardX];
+                    Bounds cellBounds = cell.getBoundsInParent();
+
+                    ghostRect.setVisible(true);
+                    ghostRect.setTranslateX(cellBounds.getMinX());
+                    ghostRect.setTranslateY(cellBounds.getMinY());
+                    setGhostRectangleData(color, ghostRect);
                 }
             }
         }
@@ -297,6 +346,15 @@ public class GuiController implements Initializable {
             rectangle.setStroke(GRID_COLOR);
             rectangle.setStrokeWidth(0.5);
         }
+        rectangle.setArcHeight(0);
+        rectangle.setArcWidth(0);
+    }
+
+    private void setGhostRectangleData(int color, Rectangle rectangle) {
+        // this is only called when color != 0 but keeps styling explicit
+        rectangle.setFill(Color.TRANSPARENT);
+        rectangle.setStroke(getFillColor(color)); // same colour as piece, just outline
+        rectangle.setStrokeWidth(0.8);
         rectangle.setArcHeight(0);
         rectangle.setArcWidth(0);
     }
