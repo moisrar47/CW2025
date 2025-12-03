@@ -1,12 +1,17 @@
 <?import com.comp2042.view.GameOverPanel?>
 <?import javafx.scene.Group?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Text?>
-<?import java.net.URL?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.net.URL?>
 
 <StackPane fx:controller="com.comp2042.view.GuiController"
+           fx:id="rootPane"
            xmlns:fx="http://javafx.com/fxml">
 
     <!-- Game area -->
@@ -22,16 +27,21 @@
         </BorderPane>
     </StackPane>
 
-    <!-- notifications-->
+    <!-- notifications -->
     <Group fx:id="groupNotification">
         <VBox alignment="CENTER">
             <GameOverPanel fx:id="gameOverPanel"/>
         </VBox>
     </Group>
 
-    <!-- score -->
-    <HBox alignment="TOP_LEFT" StackPane.alignment="TOP_LEFT" spacing="10">
-        <Label fx:id="scoreLabel" text="0" styleClass="scoreClass" />
+    <!-- top HUD; score in fixed top left corner always -->
+    <HBox fx:id="scoreContainer"
+          layoutX="10"
+          layoutY="10"
+          spacing="10">
+        <Label fx:id="scoreLabel"
+               text="0"
+               styleClass="scoreClass" />
     </HBox>
 
     <stylesheets>

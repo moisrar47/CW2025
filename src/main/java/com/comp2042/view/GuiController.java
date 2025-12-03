@@ -29,9 +29,12 @@ import javafx.util.Duration;
 import javafx.scene.layout.BorderPane;
 import javafx.geometry.Pos;
 import javafx.geometry.Bounds;
-import javafx.scene.paint.Color;
 import javafx.application.Platform;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.StackPane;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -44,6 +47,9 @@ public class GuiController implements Initializable {
 
     private static final Color GRID_COLOR = Color.rgb(40, 40, 40); // dark grey lines
     private static final Color EMPTY_CELL_COLOR = Color.BLACK;    // well background
+
+    @FXML
+    private StackPane rootPane;
 
     @FXML
     private GridPane gamePanel;
@@ -72,6 +78,7 @@ public class GuiController implements Initializable {
 
     private Rectangle[][] rectangles;
     private Rectangle[][] ghostRectangles;
+    private ViewData lastViewData;
 
     private Timeline timeLine;
 
@@ -120,6 +127,11 @@ public class GuiController implements Initializable {
                 }
             }
         });
+
+        rootPane.addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
+        rootPane.addEventFilter(MouseEvent.MOUSE_CLICKED, this::handleMouseClicked);
+        rootPane.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
+
         gameOverPanel.setVisible(false);
 
         final Reflection reflection = new Reflection();
@@ -245,12 +257,13 @@ public class GuiController implements Initializable {
 
     private void refreshBrick(ViewData brick) {
         if (isPause.getValue() == Boolean.FALSE) {
+            lastViewData = brick;
             int[][] data = brick.getBrickData();
             int baseX = brick.getxPosition();
             int baseY = brick.getyPosition();
             int ghostBaseY = brick.getGhostYPosition();
 
-            // 1) Active falling piece
+            // 1 Active falling piece
             for (int i = 0; i < data.length; i++) {
                 for (int j = 0; j < data[i].length; j++) {
                     Rectangle rectangle = rectangles[i][j];
@@ -286,7 +299,7 @@ public class GuiController implements Initializable {
                 }
             }
 
-            // 2) Ghost landing outline
+            // 2 Ghost landing outline
             for (int i = 0; i < data.length; i++) {
                 for (int j = 0; j < data[i].length; j++) {
                     Rectangle ghostRect = ghostRectangles[i][j];
@@ -357,6 +370,104 @@ public class GuiController implements Initializable {
         rectangle.setStrokeWidth(0.8);
         rectangle.setArcHeight(0);
         rectangle.setArcWidth(0);
+    }
+
+    private void handleMouseMoved(MouseEvent mouseEvent) {
+        if (isPause.get() || isGameOver.get() || eventListener == null || lastViewData == null) {
+            return;
+        }
+
+        // Convert mouse position into gamePanel's local coordinates
+        javafx.geometry.Point2D localPoint =
+            gamePanel.sceneToLocal(mouseEvent.getSceneX(), mouseEvent.getSceneY());
+
+        double width = brickPanel.getWidth();
+        if (width <= 0) {
+            return;
+        }
+
+        // Mouse X within the brick panel
+        double x = mouseEvent.getX();
+        if (x < 0) x = 0;
+        if (x > width) x = width;
+
+        int columns = displayMatrix[0].length;
+        double cellWidth = width / columns;
+
+        int targetColumn = (int) (x / cellWidth);
+        if (targetColumn < 0) targetColumn = 0;
+        if (targetColumn >= columns) targetColumn = columns - 1;
+
+        // Find the horizontal coverage of the current piece: [pieceLeft, pieceRight]
+        int[][] data = lastViewData.getBrickData();
+        int baseX = lastViewData.getxPosition();
+
+        int minRelX = Integer.MAX_VALUE;
+        int maxRelX = Integer.MIN_VALUE;
+
+        for (int i = 0; i < data.length; i++) {
+            for (int j = 0; j < data[i].length; j++) {
+                if (data[i][j] != 0) {
+                    if (j < minRelX) minRelX = j;
+                    if (j > maxRelX) maxRelX = j;
+                }
+            }
+        }
+
+        if (minRelX == Integer.MAX_VALUE) {
+            // no visible blocks in this shape (shouldn't happen)
+            return;
+        }
+
+        int pieceLeft = baseX + minRelX;
+        int pieceRight = baseX + maxRelX;
+
+        // Only move if the mouse column is completely outside the piece
+        if (targetColumn < pieceLeft) {
+            refreshBrick(eventListener.onLeftEvent(
+                new MoveEvent(EventType.LEFT, EventSource.USER)
+            ));
+        } else if (targetColumn > pieceRight) {
+            refreshBrick(eventListener.onRightEvent(
+                new MoveEvent(EventType.RIGHT, EventSource.USER)
+            ));
+        }
+
+        // if targetColumn is between pieceLeft and pieceRight, do nothing
+        gamePanel.requestFocus();
+
+    }
+
+    private void handleMouseClicked(MouseEvent mouseEvent) {
+        if (isPause.get() || isGameOver.get()) {
+            return;
+        }
+
+        // Left click or middle click -> hard drop
+        if (mouseEvent.getButton() == MouseButton.PRIMARY ||
+            mouseEvent.getButton() == MouseButton.MIDDLE) {
+
+            hardDrop();
+            mouseEvent.consume();
+        }
+
+        gamePanel.requestFocus();
+    }
+
+    private void handleScroll(ScrollEvent event) {
+        if (isPause.get() || isGameOver.get() || eventListener == null) {
+            return;
+        }
+
+        // Any scroll (up or down) rotates the piece once
+        if (event.getDeltaY() != 0) {
+            refreshBrick(eventListener.onRotateEvent(
+                new MoveEvent(EventType.ROTATE, EventSource.USER)
+            ));
+            event.consume();
+        }
+
+        gamePanel.requestFocus();
     }
 
     private void moveDown(MoveEvent event) {
