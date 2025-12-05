@@ -58,6 +58,9 @@ public class GuiController implements Initializable {
     private StackPane pauseOverlay;
 
     @FXML
+    private StackPane gameOverOverlay;
+
+    @FXML
     private Group groupNotification;
 
     @FXML
@@ -451,18 +454,23 @@ public class GuiController implements Initializable {
     }
 
     private void handleMouseClicked(MouseEvent mouseEvent) {
-        // if pause overlay is up, never treat this as a gameplay click
-        if (isPause.get() || pauseOverlay.isVisible() || isGameOver.get()) {
-            return;
-        }
-
-        // if we just closed pause with a button, ignore this first click
+        // 1) Swallow the very next click after closing a menu
         if (ignoreNextMouseClick) {
             ignoreNextMouseClick = false;
             return;
         }
 
-        // left click or middle click ---> hard drop
+        // 2) If a menu overlay is open, ignore this click for gameplay
+        if ((pauseOverlay != null && pauseOverlay.isVisible()) ||
+            (gameOverOverlay != null && gameOverOverlay.isVisible())) {
+            return;
+        }
+
+        if (isPause.get() || isGameOver.get()) {
+            return;
+        }
+
+        // Left click or middle click -> hard drop
         if (mouseEvent.getButton() == MouseButton.PRIMARY ||
             mouseEvent.getButton() == MouseButton.MIDDLE) {
 
@@ -571,6 +579,12 @@ public class GuiController implements Initializable {
         Platform.exit();
     }
 
+    @FXML
+    private void handleGameOverPlayAgain(ActionEvent event) {
+        ignoreNextMouseClick = true;
+        newGame(event);
+    }
+
     public void setEventListener(InputEventListener eventListener) {
         this.eventListener = eventListener;
     }
@@ -581,24 +595,67 @@ public class GuiController implements Initializable {
 
     public void gameOver() {
         timeLine.stop();
-        pauseOverlay.setVisible(false);
-        isPause.setValue(Boolean.FALSE);
-        gameOverPanel.setVisible(true);
         isGameOver.setValue(Boolean.TRUE);
+
+        // hide pause overlay if somehow open
+        if (pauseOverlay != null) {
+            pauseOverlay.setVisible(false);
+        }
+
+        if (gameOverOverlay != null) {
+            gameOverOverlay.setVisible(true);
+        }
+
     }
 
     public void newGame(ActionEvent actionEvent) {
-        timeLine.stop();
-        pauseOverlay.setVisible(false);
-        gameOverPanel.setVisible(false);
-        eventListener.createNewGame();
-        gamePanel.requestFocus();
-        timeLine.play();
-        isPause.setValue(Boolean.FALSE);
-        isGameOver.setValue(Boolean.FALSE);
-    }
+        if (timeLine != null) {
+            timeLine.stop();
+        }
 
-    public void pauseGame(ActionEvent actionEvent) {
+        /* Immediately hide current active and ghost bricks so the last piece
+         from the previous game doesn't flash briefly */
+        if (rectangles != null) {
+            for (Rectangle[] row : rectangles) {
+                for (Rectangle r : row) {
+                    if (r != null) {
+                        r.setVisible(false);
+                    }
+                }
+            }
+        }
+
+        if (ghostRectangles != null) {
+            for (Rectangle[] row : ghostRectangles) {
+                for (Rectangle r : row) {
+                    if (r != null) {
+                        r.setVisible(false);
+                    }
+                }
+            }
+        }
+
+        // avoid mouse logic trying to move an old piece between games
+        lastViewData = null;
+
+        if (gameOverPanel != null) {
+            gameOverPanel.setVisible(false);
+        }
+        if (gameOverOverlay != null) {
+            gameOverOverlay.setVisible(false);
+        }
+
+        isGameOver.set(false);
+        isPause.set(false);
+
+        // let the controller/model reset the board and spawn a fresh piece
+        eventListener.createNewGame();
+
         gamePanel.requestFocus();
+
+        if (timeLine != null) {
+            timeLine.playFromStart();
+        }
     }
 }
+
