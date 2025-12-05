@@ -8,6 +8,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
 <?import java.net.URL?>
 
 <StackPane fx:controller="com.comp2042.view.GuiController"
@@ -43,6 +44,43 @@
                text="0"
                styleClass="scoreClass" />
     </HBox>
+
+    <!-- pause overlay -->
+    <StackPane fx:id="pauseOverlay"
+               visible="false"
+               mouseTransparent="false">
+        <VBox alignment="CENTER"
+              spacing="15"
+              styleClass="pausePanel">
+
+            <Label text="PAUSED"
+                   styleClass="pauseTitle"/>
+
+            <Button text="Resume"
+                    onAction="#handleResume"
+                    styleClass="ipad-dark-grey"/>
+
+            <Button text="New Game"
+                    onAction="#handleNewGameFromPause"
+                    styleClass="ipad-dark-grey"/>
+
+            <Button text="Exit"
+                    onAction="#handleExit"
+                    styleClass="ipad-dark-grey"/>
+
+            <Label text="Controls"
+                   styleClass="pauseSubtitle"/>
+
+            <Label text="Move: ← → / A D or mouse"
+                   styleClass="pauseControls"/>
+            <Label text="Rotate: ↑ / W / scroll wheel"
+                   styleClass="pauseControls"/>
+            <Label text="Soft drop: ↓ / S"
+                   styleClass="pauseControls"/>
+            <Label text="Hard drop: Space / click / middle click"
+                   styleClass="pauseControls"/>
+        </VBox>
+    </StackPane>
 
     <stylesheets>
         <URL value="@window_style.css"/>

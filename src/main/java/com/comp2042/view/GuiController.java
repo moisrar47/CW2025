@@ -55,6 +55,9 @@ public class GuiController implements Initializable {
     private GridPane gamePanel;
 
     @FXML
+    private StackPane pauseOverlay;
+
+    @FXML
     private Group groupNotification;
 
     @FXML
@@ -86,6 +89,8 @@ public class GuiController implements Initializable {
 
     private final BooleanProperty isGameOver = new SimpleBooleanProperty();
 
+    private boolean ignoreNextMouseClick = false;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         Font.loadFont(getClass().getClassLoader().getResource("digital.ttf").toExternalForm(), 38);
@@ -94,6 +99,14 @@ public class GuiController implements Initializable {
         gamePanel.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent keyEvent) {
+
+                // toggle pause with P or Esc
+                if (keyEvent.getCode() == KeyCode.P || keyEvent.getCode() == KeyCode.ESCAPE) {
+                    togglePause();
+                    keyEvent.consume();
+                    return;
+                }
+
                 if (isPause.getValue() == Boolean.FALSE && isGameOver.getValue() == Boolean.FALSE) {
                     if (keyEvent.getCode() == KeyCode.LEFT || keyEvent.getCode() == KeyCode.A) {
                         refreshBrick(eventListener.onLeftEvent(new MoveEvent(EventType.LEFT, EventSource.USER)));
@@ -115,12 +128,7 @@ public class GuiController implements Initializable {
                 if (keyEvent.getCode() == KeyCode.N) {
                     newGame(null);
                 }
-                /* if (keyEvent.getCode() == KeyCode.F1) {
-                    * this is for TEMPORARY debugging to force a +50 popup to test if animation is working *
-                    NotificationPanel notificationPanel = new NotificationPanel("+50");
-                    groupNotification.getChildren().add(notificationPanel);
-                    notificationPanel.showScore(groupNotification.getChildren());
-                } */
+
                 if (keyEvent.getCode() == KeyCode.SPACE) {
                     hardDrop();
                     keyEvent.consume();
@@ -128,9 +136,12 @@ public class GuiController implements Initializable {
             }
         });
 
+
         rootPane.addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
         rootPane.addEventFilter(MouseEvent.MOUSE_CLICKED, this::handleMouseClicked);
         rootPane.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
+
+        pauseOverlay.setVisible(false);
 
         gameOverPanel.setVisible(false);
 
@@ -373,7 +384,8 @@ public class GuiController implements Initializable {
     }
 
     private void handleMouseMoved(MouseEvent mouseEvent) {
-        if (isPause.get() || isGameOver.get() || eventListener == null || lastViewData == null) {
+        if (isPause.get() || pauseOverlay.isVisible() || isGameOver.get()
+            || eventListener == null || lastViewData == null) {
             return;
         }
 
@@ -439,11 +451,18 @@ public class GuiController implements Initializable {
     }
 
     private void handleMouseClicked(MouseEvent mouseEvent) {
-        if (isPause.get() || isGameOver.get()) {
+        // if pause overlay is up, never treat this as a gameplay click
+        if (isPause.get() || pauseOverlay.isVisible() || isGameOver.get()) {
             return;
         }
 
-        // Left click or middle click -> hard drop
+        // if we just closed pause with a button, ignore this first click
+        if (ignoreNextMouseClick) {
+            ignoreNextMouseClick = false;
+            return;
+        }
+
+        // left click or middle click ---> hard drop
         if (mouseEvent.getButton() == MouseButton.PRIMARY ||
             mouseEvent.getButton() == MouseButton.MIDDLE) {
 
@@ -511,6 +530,47 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    private void togglePause() {
+        // do not pause after game over or before timeline exists
+        if (isGameOver.get() || timeLine == null) {
+            return;
+        }
+
+        boolean pauseNow = !isPause.get();
+        isPause.set(pauseNow);
+
+        if (pauseNow) {
+            timeLine.pause();
+            pauseOverlay.setVisible(true);
+        } else {
+            pauseOverlay.setVisible(false);
+            timeLine.play();
+            gamePanel.requestFocus();
+        }
+    }
+
+    @FXML
+    private void handleResume(ActionEvent event) {
+        if (isPause.get()) {
+            ignoreNextMouseClick = true;
+            togglePause();
+        }
+    }
+
+    @FXML
+    private void handleNewGameFromPause(ActionEvent event) {
+        // clear pause state and start a fresh game
+        ignoreNextMouseClick = true;
+        isPause.set(false);
+        pauseOverlay.setVisible(false);
+        newGame(event);
+    }
+
+    @FXML
+    private void handleExit(ActionEvent event) {
+        Platform.exit();
+    }
+
     public void setEventListener(InputEventListener eventListener) {
         this.eventListener = eventListener;
     }
@@ -521,12 +581,15 @@ public class GuiController implements Initializable {
 
     public void gameOver() {
         timeLine.stop();
+        pauseOverlay.setVisible(false);
+        isPause.setValue(Boolean.FALSE);
         gameOverPanel.setVisible(true);
         isGameOver.setValue(Boolean.TRUE);
     }
 
     public void newGame(ActionEvent actionEvent) {
         timeLine.stop();
+        pauseOverlay.setVisible(false);
         gameOverPanel.setVisible(false);
         eventListener.createNewGame();
         gamePanel.requestFocus();
