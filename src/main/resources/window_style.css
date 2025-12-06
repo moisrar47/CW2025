@@ -123,3 +123,8 @@
     -fx-font-size: 11;
 }
 
+.volumeSlider {
+    -fx-pref-width: 180;
+}
+
+

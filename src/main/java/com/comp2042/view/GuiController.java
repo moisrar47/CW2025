@@ -1,5 +1,10 @@
 package com.comp2042.view;
 
+import javafx.scene.control.Slider;
+import javafx.scene.media.AudioClip;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.control.Button;
 import com.comp2042.input.InputEventListener;
 import com.comp2042.model.ViewData;
 import com.comp2042.input.MoveEvent;
@@ -61,6 +66,9 @@ public class GuiController implements Initializable {
     private StackPane gameOverOverlay;
 
     @FXML
+    private Button musicToggleButton;
+
+    @FXML
     private Group groupNotification;
 
     @FXML
@@ -78,6 +86,9 @@ public class GuiController implements Initializable {
     @FXML
     private BorderPane gameBoard;
 
+    @FXML
+    private Slider volumeSlider;
+
     private Rectangle[][] displayMatrix;
 
     private InputEventListener eventListener;
@@ -88,9 +99,24 @@ public class GuiController implements Initializable {
 
     private Timeline timeLine;
 
+    // Audio
+    private MediaPlayer backgroundPlayer;
+    private AudioClip moveClip;
+    private AudioClip rotateClip;
+    private AudioClip softDropClip;
+    private AudioClip hardDropClip;
+    private AudioClip gameOverClip;
+    private AudioClip lineClearSound;
+
+
     private final BooleanProperty isPause = new SimpleBooleanProperty();
 
     private final BooleanProperty isGameOver = new SimpleBooleanProperty();
+
+    private double masterVolume = 0.7;
+
+    private boolean musicEnabled = true; // default is ON
+    private boolean sfxEnabled = true;
 
     private boolean ignoreNextMouseClick = false;
 
@@ -113,18 +139,22 @@ public class GuiController implements Initializable {
                 if (isPause.getValue() == Boolean.FALSE && isGameOver.getValue() == Boolean.FALSE) {
                     if (keyEvent.getCode() == KeyCode.LEFT || keyEvent.getCode() == KeyCode.A) {
                         refreshBrick(eventListener.onLeftEvent(new MoveEvent(EventType.LEFT, EventSource.USER)));
+                        playMoveSound();
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.RIGHT || keyEvent.getCode() == KeyCode.D) {
                         refreshBrick(eventListener.onRightEvent(new MoveEvent(EventType.RIGHT, EventSource.USER)));
+                        playMoveSound();
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.UP || keyEvent.getCode() == KeyCode.W) {
                         refreshBrick(eventListener.onRotateEvent(new MoveEvent(EventType.ROTATE, EventSource.USER)));
+                        playRotateSound();
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.DOWN || keyEvent.getCode() == KeyCode.S) {
                         moveDown(new MoveEvent(EventType.DOWN, EventSource.USER));
+                        playMoveSound();
                         keyEvent.consume();
                     }
                 }
@@ -161,6 +191,20 @@ public class GuiController implements Initializable {
         // small fixed margin so the grid is not glued to the top left of the window
         gameBoard.setLayoutX(20);
         gameBoard.setLayoutY(20);
+
+        initAudio();
+        updateMusicToggleText();
+
+        // starts music from the get-go
+        Platform.runLater(this::startBackgroundMusic);
+
+        if (volumeSlider != null) {
+            volumeSlider.setValue(masterVolume);
+            volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                masterVolume = newVal.doubleValue();
+                applyVolumeToAll();
+            });
+        }
 
     }
 
@@ -386,6 +430,119 @@ public class GuiController implements Initializable {
         rectangle.setArcWidth(0);
     }
 
+    private void initAudio() {
+        try {
+            moveClip      = loadClip("/sounds/move.wav");
+            rotateClip    = loadClip("/sounds/rotate.wav");
+            softDropClip  = loadClip("/sounds/soft_drop.wav");
+            hardDropClip  = loadClip("/sounds/hard_drop.wav");
+            gameOverClip  = loadClip("/sounds/game_over.wav");
+            lineClearSound = loadClip("/sounds/line_clear.wav");
+
+            URL bgmUrl = getClass().getResource("/sounds/bgm.mp3");
+            if (bgmUrl != null) {
+                backgroundPlayer = new MediaPlayer(new Media(bgmUrl.toExternalForm()));
+                backgroundPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                backgroundPlayer.setVolume(0.4); // tweak volume as you like
+            }
+        } catch (Exception e) {
+            // fail silently in game, just logs to console
+            e.printStackTrace();
+        }
+    }
+
+    private AudioClip loadClip(String path) {
+        URL url = getClass().getResource(path);
+        if (url == null) {
+            return null;
+        }
+        return new AudioClip(url.toExternalForm());
+    }
+
+    private void startBackgroundMusic() {
+        if (!musicEnabled || backgroundPlayer == null) {
+            return;
+        }
+
+        // never start music while paused or after game over
+        if (isPause.get() || isGameOver.get()) {
+            return;
+        }
+
+        // make sure it loops and respects master volume
+        backgroundPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+        backgroundPlayer.setVolume(masterVolume);
+        backgroundPlayer.play();
+    }
+
+
+    private void stopBackgroundMusic() {
+        if (backgroundPlayer != null) {
+            backgroundPlayer.pause();
+        }
+    }
+
+    private void updateMusicToggleText() {
+        if (musicToggleButton != null) {
+            musicToggleButton.setText(musicEnabled ? "Music: ON" : "Music: OFF");
+        }
+    }
+
+    private void playMoveSound() {
+        if (!sfxEnabled || moveClip == null) {
+            return;
+        }
+        moveClip.setVolume(masterVolume);
+        moveClip.play();
+    }
+
+    private void playRotateSound() {
+        if (!sfxEnabled || rotateClip == null) {
+            return;
+        }
+        rotateClip.setVolume(masterVolume);
+        rotateClip.play();
+    }
+
+    private void playSoftDropSound() {
+        if (!sfxEnabled || softDropClip == null) {
+            return;
+        }
+        softDropClip.setVolume(masterVolume);
+        softDropClip.play();
+    }
+
+    private void playHardDropSound() {
+        if (!sfxEnabled || hardDropClip == null) {
+            return;
+        }
+        hardDropClip.setVolume(masterVolume);
+        hardDropClip.play();
+    }
+
+    private void playLineClearSound() {
+        if (!sfxEnabled || lineClearSound == null) {
+            return;
+        }
+        lineClearSound.setVolume(masterVolume);
+        lineClearSound.play();
+    }
+
+    private void playGameOverSound() {
+        if (!sfxEnabled || gameOverClip == null) {
+            return;
+        }
+        gameOverClip.setVolume(masterVolume);
+        gameOverClip.play();
+    }
+
+    private void applyVolumeToAll() {
+        // background music
+        if (backgroundPlayer != null) {
+            backgroundPlayer.setVolume(musicEnabled ? masterVolume : 0.0);
+        }
+    }
+
     private void handleMouseMoved(MouseEvent mouseEvent) {
         if (isPause.get() || pauseOverlay.isVisible() || isGameOver.get()
             || eventListener == null || lastViewData == null) {
@@ -442,10 +599,12 @@ public class GuiController implements Initializable {
             refreshBrick(eventListener.onLeftEvent(
                 new MoveEvent(EventType.LEFT, EventSource.USER)
             ));
+            playMoveSound();
         } else if (targetColumn > pieceRight) {
             refreshBrick(eventListener.onRightEvent(
                 new MoveEvent(EventType.RIGHT, EventSource.USER)
             ));
+            playMoveSound();
         }
 
         // if targetColumn is between pieceLeft and pieceRight, do nothing
@@ -491,6 +650,7 @@ public class GuiController implements Initializable {
             refreshBrick(eventListener.onRotateEvent(
                 new MoveEvent(EventType.ROTATE, EventSource.USER)
             ));
+            playRotateSound();
             event.consume();
         }
 
@@ -500,7 +660,15 @@ public class GuiController implements Initializable {
     private void moveDown(MoveEvent event) {
         if (isPause.getValue() == Boolean.FALSE) {
             DownData downData = eventListener.onDownEvent(event);
+            // only plays soft drop sound for user initiated drops, not timer thread
+            if (event.getEventSource() == EventSource.USER) {
+                playSoftDropSound();
+            }
+
             if (downData.getClearRow() != null && downData.getClearRow().getLinesRemoved() > 0) {
+
+                playLineClearSound(); // play "line clear" SFX when rows are broken
+
                 NotificationPanel notificationPanel = new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
                 groupNotification.getChildren().add(notificationPanel);
                 notificationPanel.showScore(groupNotification.getChildren());
@@ -526,6 +694,9 @@ public class GuiController implements Initializable {
 
         // If we actually cleared any lines, show the floating +score popup
         if (downData.getClearRow().getLinesRemoved() > 0) {
+
+            playLineClearSound(); // play "line clear" SFX when rows are broken
+
             NotificationPanel notificationPanel =
                 new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
             groupNotification.getChildren().add(notificationPanel);
@@ -534,6 +705,8 @@ public class GuiController implements Initializable {
 
         // refresh the active brick view (this will now be the newly spawned piece)
         refreshBrick(downData.getViewData());
+
+        playHardDropSound();
 
         gamePanel.requestFocus();
     }
@@ -550,12 +723,15 @@ public class GuiController implements Initializable {
         if (pauseNow) {
             timeLine.pause();
             pauseOverlay.setVisible(true);
+            stopBackgroundMusic();
         } else {
             pauseOverlay.setVisible(false);
             timeLine.play();
+            startBackgroundMusic();
             gamePanel.requestFocus();
         }
     }
+
 
     @FXML
     private void handleResume(ActionEvent event) {
@@ -575,7 +751,34 @@ public class GuiController implements Initializable {
     }
 
     @FXML
+    private void handleToggleSfx(ActionEvent event) {
+        sfxEnabled = !sfxEnabled;
+
+        if (event.getSource() instanceof Button) {
+            Button btn = (Button) event.getSource();
+            btn.setText(sfxEnabled ? "SFX: On" : "SFX: Off");
+        }
+    }
+
+    @FXML
+    private void handleToggleMusic(ActionEvent event) {
+        musicEnabled = !musicEnabled;
+
+        if (event.getSource() instanceof Button) {
+            Button btn = (Button) event.getSource();
+            btn.setText(musicEnabled ? "Music: On" : "Music: Off");
+        }
+
+        if (musicEnabled) {
+            startBackgroundMusic();
+        } else {
+            stopBackgroundMusic();
+        }
+    }
+
+    @FXML
     private void handleExit(ActionEvent event) {
+        stopBackgroundMusic();
         Platform.exit();
     }
 
@@ -597,6 +800,10 @@ public class GuiController implements Initializable {
         timeLine.stop();
         isGameOver.setValue(Boolean.TRUE);
 
+        // stop music and play game over jingle
+        stopBackgroundMusic();
+        playGameOverSound();
+
         // hide pause overlay if somehow open
         if (pauseOverlay != null) {
             pauseOverlay.setVisible(false);
@@ -605,8 +812,8 @@ public class GuiController implements Initializable {
         if (gameOverOverlay != null) {
             gameOverOverlay.setVisible(true);
         }
-
     }
+
 
     public void newGame(ActionEvent actionEvent) {
         if (timeLine != null) {
@@ -656,6 +863,8 @@ public class GuiController implements Initializable {
         if (timeLine != null) {
             timeLine.playFromStart();
         }
+
+        startBackgroundMusic();
     }
 }
 

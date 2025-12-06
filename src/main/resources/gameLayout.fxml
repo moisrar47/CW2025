@@ -5,11 +5,11 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Button?>
 <?import java.net.URL?>
+<?import javafx.scene.control.Slider?>
 
 <StackPane fx:controller="com.comp2042.view.GuiController"
            fx:id="rootPane"
@@ -64,9 +64,35 @@
                     onAction="#handleNewGameFromPause"
                     styleClass="ipad-dark-grey"/>
 
+            <Button fx:id="musicToggleButton"
+                    text="Music: ON"
+                    onAction="#handleToggleMusic"
+                    styleClass="ipad-dark-grey"/>
+
             <Button text="Exit"
                     onAction="#handleExit"
                     styleClass="ipad-dark-grey"/>
+
+            <!-- audio controls -->
+            <Label text="Audio"
+                   styleClass="pauseSubtitle"/>
+
+            <HBox alignment="CENTER" spacing="10">
+                <Button text="Music: On"
+                        onAction="#handleToggleMusic"
+                        styleClass="ipad-dark-grey"/>
+
+                <Button text="SFX: On"
+                        onAction="#handleToggleSfx"
+                        styleClass="ipad-dark-grey"/>
+            </HBox>
+
+            <Slider fx:id="volumeSlider"
+                    min="0.0"
+                    max="1.0"
+                    value="0.7"
+                    blockIncrement="0.1"
+                    styleClass="volumeSlider"/>
 
             <Label text="Controls"
                    styleClass="pauseSubtitle"/>
