@@ -12,8 +12,9 @@ import com.comp2042.view.GuiController;
 
 public class GameController implements InputEventListener {
 
-    private static final int BOARD_ROWS = 31;
-    private static final int BOARD_COLUMNS = 16;
+    // 2 hidden rows, 20 visible = 22
+    private static final int BOARD_ROWS = 22;
+    private static final int BOARD_COLUMNS = 10;
 
     private final Board board = new SimpleBoard(BOARD_ROWS, BOARD_COLUMNS);
 

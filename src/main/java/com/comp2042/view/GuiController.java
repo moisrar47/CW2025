@@ -46,7 +46,7 @@ import java.util.ResourceBundle;
 
 public class GuiController implements Initializable {
 
-    private static final int BRICK_SIZE = 20;
+    private static final int BRICK_SIZE = 26;
     private static final int HIDDEN_TOP_ROWS = 2;  // top rows aren't shown to player
     private static final int DROP_INTERVAL_MS = 400;
 
@@ -550,18 +550,22 @@ public class GuiController implements Initializable {
         }
 
         // Convert mouse position into gamePanel's local coordinates
-        javafx.geometry.Point2D localPoint =
+        javafx.geometry.Point2D local =
             gamePanel.sceneToLocal(mouseEvent.getSceneX(), mouseEvent.getSceneY());
 
-        double width = brickPanel.getWidth();
-        if (width <= 0) {
+        double width  = gamePanel.getWidth();
+        double height = gamePanel.getHeight();
+        if (width <= 0 || height <= 0) {
             return;
         }
 
-        // Mouse X within the brick panel
-        double x = mouseEvent.getX();
-        if (x < 0) x = 0;
-        if (x > width) x = width;
+        double x = local.getX();
+        double y = local.getY();
+
+        // If the mouse is outside the visible well, don't move the piece
+        if (x < 0 || x > width || y < 0 || y > height) {
+            return;
+        }
 
         int columns = displayMatrix[0].length;
         double cellWidth = width / columns;
