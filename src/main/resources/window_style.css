@@ -127,4 +127,17 @@
     -fx-pref-width: 180;
 }
 
+.hudLabel {
+    -fx-font-family: "Let's go Digital";
+    -fx-font-size: 14px;
+    -fx-text-fill: yellow;
+}
+
+.hudValue {
+    -fx-font-family: "Let's go Digital";
+    -fx-font-size: 18px;   /* slightly bigger than the label text */
+    -fx-text-fill: yellow;
+}
+
+
 

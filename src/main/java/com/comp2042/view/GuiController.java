@@ -48,7 +48,7 @@ public class GuiController implements Initializable {
 
     private static final int BRICK_SIZE = 26;
     private static final int HIDDEN_TOP_ROWS = 2;  // top rows aren't shown to player
-    private static final int DROP_INTERVAL_MS = 400;
+    private static final int DROP_INTERVAL_MS = 800; // decent brick speed
 
     private static final Color GRID_COLOR = Color.rgb(40, 40, 40); // dark grey lines
     private static final Color EMPTY_CELL_COLOR = Color.BLACK;    // well background
@@ -79,6 +79,12 @@ public class GuiController implements Initializable {
 
     @FXML
     private Label scoreLabel;
+
+    @FXML
+    private Label levelLabel;
+
+    @FXML
+    private Label linesLabel;
 
     @FXML
     private GameOverPanel gameOverPanel;
@@ -119,6 +125,9 @@ public class GuiController implements Initializable {
     private boolean sfxEnabled = true;
 
     private boolean ignoreNextMouseClick = false;
+
+    private int totalLinesCleared = 0;
+    private int currentLevel = 1;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -189,8 +198,8 @@ public class GuiController implements Initializable {
         brickPanel.toFront(); // this ensures the falling brick layer is drawn above the background grid
 
         // small fixed margin so the grid is not glued to the top left of the window
-        gameBoard.setLayoutX(20);
-        gameBoard.setLayoutY(20);
+        // gameBoard.setLayoutX(20);
+        // gameBoard.setLayoutY(20);
 
         initAudio();
         updateMusicToggleText();
@@ -430,6 +439,40 @@ public class GuiController implements Initializable {
         rectangle.setArcWidth(0);
     }
 
+    private void handleLineClear(DownData downData) {
+        if (downData == null ||
+            downData.getClearRow() == null ||
+            downData.getClearRow().getLinesRemoved() <= 0) {
+            return;
+        }
+
+        int linesRemoved = downData.getClearRow().getLinesRemoved();
+
+        // Update total lines
+        totalLinesCleared += linesRemoved;
+        if (linesLabel != null) {
+            linesLabel.setText(String.valueOf(totalLinesCleared));
+        }
+
+        // a simple level formula: +1 level every 10 lines
+        int newLevel = 1 + (totalLinesCleared / 10);
+        if (newLevel != currentLevel) {
+            currentLevel = newLevel;
+            if (levelLabel != null) {
+                levelLabel.setText(String.valueOf(currentLevel));
+            }
+        }
+
+        // existing floating +score popup
+        NotificationPanel notificationPanel =
+            new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
+        groupNotification.getChildren().add(notificationPanel);
+        notificationPanel.showScore(groupNotification.getChildren());
+
+        // plays line-clear SFX (your existing method)
+        playLineClearSound();
+    }
+
     private void initAudio() {
         try {
             moveClip      = loadClip("/sounds/move.wav");
@@ -662,55 +705,46 @@ public class GuiController implements Initializable {
     }
 
     private void moveDown(MoveEvent event) {
-        if (isPause.getValue() == Boolean.FALSE) {
+        if (!isPause.getValue()) {
             DownData downData = eventListener.onDownEvent(event);
+
             // only plays soft drop sound for user initiated drops, not timer thread
             if (event.getEventSource() == EventSource.USER) {
                 playSoftDropSound();
             }
 
-            if (downData.getClearRow() != null && downData.getClearRow().getLinesRemoved() > 0) {
+            // now centralised: line-clear SFX + +score popup
+            handleLineClear(downData);
 
-                playLineClearSound(); // play "line clear" SFX when rows are broken
-
-                NotificationPanel notificationPanel = new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
-                groupNotification.getChildren().add(notificationPanel);
-                notificationPanel.showScore(groupNotification.getChildren());
-            }
             refreshBrick(downData.getViewData());
         }
         gamePanel.requestFocus();
     }
 
+
     private void hardDrop() {
-        // Don’t do anything if paused or game over
-        if (isPause.getValue() == Boolean.TRUE || isGameOver.getValue() == Boolean.TRUE) {
+        // don’t do anything if paused or game over
+        if (isPause.getValue() || isGameOver.getValue()) {
             return;
         }
 
         DownData downData;
 
+        // keep dropping until the piece locks and we get clear-row info
         do {
             downData = eventListener.onDownEvent(
                 new MoveEvent(EventType.DOWN, EventSource.USER)
             );
         } while (downData.getClearRow() == null);
 
-        // If we actually cleared any lines, show the floating +score popup
-        if (downData.getClearRow().getLinesRemoved() > 0) {
-
-            playLineClearSound(); // play "line clear" SFX when rows are broken
-
-            NotificationPanel notificationPanel =
-                new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
-            groupNotification.getChildren().add(notificationPanel);
-            notificationPanel.showScore(groupNotification.getChildren());
-        }
-
-        // refresh the active brick view (this will now be the newly spawned piece)
-        refreshBrick(downData.getViewData());
-
+        // hard-drop sound
         playHardDropSound();
+
+        // update lines + level HUD and show +score popup + line-clear SFX
+        handleLineClear(downData);
+
+        // refresh the active brick view (new piece)
+        refreshBrick(downData.getViewData());
 
         gamePanel.requestFocus();
     }
@@ -859,9 +893,18 @@ public class GuiController implements Initializable {
         isGameOver.set(false);
         isPause.set(false);
 
+        // reset HUD counters
+        totalLinesCleared = 0;
+        currentLevel = 1;
+        if (linesLabel != null) {
+            linesLabel.setText("0");
+        }
+        if (levelLabel != null) {
+            levelLabel.setText("1");
+        }
+
         // let the controller/model reset the board and spawn a fresh piece
         eventListener.createNewGame();
-
         gamePanel.requestFocus();
 
         if (timeLine != null) {
@@ -869,6 +912,16 @@ public class GuiController implements Initializable {
         }
 
         startBackgroundMusic();
+
+        // restart background music from the beginning for a fresh game
+        if (backgroundPlayer != null) {
+            backgroundPlayer.stop();                          // rewind to start
+            backgroundPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+            backgroundPlayer.setVolume(masterVolume);
+            if (musicEnabled) {
+                backgroundPlayer.play();
+            }
+        }
     }
 }
 

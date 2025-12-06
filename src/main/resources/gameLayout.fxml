@@ -10,23 +10,60 @@
 <?import javafx.scene.control.Button?>
 <?import java.net.URL?>
 <?import javafx.scene.control.Slider?>
+<?import javafx.scene.layout.Region?>
 
 <StackPane fx:controller="com.comp2042.view.GuiController"
            fx:id="rootPane"
            xmlns:fx="http://javafx.com/fxml">
 
     <!-- Game area -->
-    <StackPane alignment="CENTER">
-        <BorderPane styleClass="gameBoard" fx:id="gameBoard">
-            <center>
-                <StackPane alignment="TOP_LEFT">
-                    <GridPane fx:id="gamePanel" hgap="1" vgap="1"/>
-                    <Pane fx:id="ghostPanel"/>
-                    <Pane fx:id="brickPanel"/>
-                </StackPane>
-            </center>
-        </BorderPane>
-    </StackPane>
+    <VBox alignment="TOP_CENTER" spacing="5">
+
+        <!-- top HUD: score + level + lines -->
+        <HBox alignment="CENTER"
+              spacing="12"
+              translateY="-6"
+              style="-fx-padding: 8 0 0 0;">
+            <!-- score -->
+            <Label text="SCORE:"
+                   styleClass="hudLabel"/>
+
+            <Label fx:id="scoreLabel"
+                   text="0"
+                   styleClass="hudValue"/>
+
+            <!-- level -->
+            <Label text="LEVEL:"
+                   styleClass="hudLabel"/>
+
+            <Label fx:id="levelLabel"
+                   text="1"
+                   styleClass="hudValue"/>
+
+            <!-- lines -->
+            <Label text="LINES:"
+                   styleClass="hudLabel"/>
+
+            <Label fx:id="linesLabel"
+                   text="0"
+                   styleClass="hudValue"/>
+
+            <!-- spacer to push anything else to the right if needed later -->
+            <!-- (no Region here anymore so the HUD can stay centered) -->
+        </HBox>
+
+        <StackPane alignment="CENTER">
+            <BorderPane styleClass="gameBoard" fx:id="gameBoard">
+                <center>
+                    <StackPane alignment="TOP_LEFT">
+                        <GridPane fx:id="gamePanel" hgap="1" vgap="1"/>
+                        <Pane fx:id="ghostPanel"/>
+                        <Pane fx:id="brickPanel"/>
+                    </StackPane>
+                </center>
+            </BorderPane>
+        </StackPane>
+    </VBox>
 
     <!-- notifications -->
     <Group fx:id="groupNotification">
@@ -34,16 +71,6 @@
             <GameOverPanel fx:id="gameOverPanel"/>
         </VBox>
     </Group>
-
-    <!-- top HUD; score in fixed top left corner always -->
-    <HBox fx:id="scoreContainer"
-          layoutX="10"
-          layoutY="10"
-          spacing="10">
-        <Label fx:id="scoreLabel"
-               text="0"
-               styleClass="scoreClass" />
-    </HBox>
 
     <!-- pause overlay -->
     <StackPane fx:id="pauseOverlay"
@@ -64,11 +91,6 @@
                     onAction="#handleNewGameFromPause"
                     styleClass="ipad-dark-grey"/>
 
-            <Button fx:id="musicToggleButton"
-                    text="Music: ON"
-                    onAction="#handleToggleMusic"
-                    styleClass="ipad-dark-grey"/>
-
             <Button text="Exit"
                     onAction="#handleExit"
                     styleClass="ipad-dark-grey"/>
@@ -78,11 +100,13 @@
                    styleClass="pauseSubtitle"/>
 
             <HBox alignment="CENTER" spacing="10">
-                <Button text="Music: On"
+                <Button fx:id="musicToggleButton"
+                        text="Music: On"
                         onAction="#handleToggleMusic"
                         styleClass="ipad-dark-grey"/>
 
-                <Button text="SFX: On"
+                <Button fx:id="sfxToggleButton"
+                        text="SFX: On"
                         onAction="#handleToggleSfx"
                         styleClass="ipad-dark-grey"/>
             </HBox>
