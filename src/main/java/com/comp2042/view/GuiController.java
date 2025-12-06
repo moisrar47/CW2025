@@ -49,6 +49,7 @@ public class GuiController implements Initializable {
     private static final int BRICK_SIZE = 26;
     private static final int HIDDEN_TOP_ROWS = 2;  // top rows aren't shown to player
     private static final int DROP_INTERVAL_MS = 800; // decent brick speed
+    private int currentDropIntervalMs = DROP_INTERVAL_MS;
 
     private static final Color GRID_COLOR = Color.rgb(40, 40, 40); // dark grey lines
     private static final Color EMPTY_CELL_COLOR = Color.BLACK;    // well background
@@ -113,6 +114,7 @@ public class GuiController implements Initializable {
     private AudioClip hardDropClip;
     private AudioClip gameOverClip;
     private AudioClip lineClearSound;
+    private AudioClip levelUpClip;
 
 
     private final BooleanProperty isPause = new SimpleBooleanProperty();
@@ -280,7 +282,7 @@ public class GuiController implements Initializable {
         gameBoard.setMaxHeight(frameHeight);
 
         timeLine = new Timeline(new KeyFrame(
-            Duration.millis(DROP_INTERVAL_MS),
+            Duration.millis(currentDropIntervalMs),
             ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))
         ));
 
@@ -446,30 +448,13 @@ public class GuiController implements Initializable {
             return;
         }
 
-        int linesRemoved = downData.getClearRow().getLinesRemoved();
-
-        // Update total lines
-        totalLinesCleared += linesRemoved;
-        if (linesLabel != null) {
-            linesLabel.setText(String.valueOf(totalLinesCleared));
-        }
-
-        // a simple level formula: +1 level every 10 lines
-        int newLevel = 1 + (totalLinesCleared / 10);
-        if (newLevel != currentLevel) {
-            currentLevel = newLevel;
-            if (levelLabel != null) {
-                levelLabel.setText(String.valueOf(currentLevel));
-            }
-        }
-
-        // existing floating +score popup
+        // floating +score popup
         NotificationPanel notificationPanel =
             new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
         groupNotification.getChildren().add(notificationPanel);
         notificationPanel.showScore(groupNotification.getChildren());
 
-        // plays line-clear SFX (your existing method)
+        // line-clear SFX
         playLineClearSound();
     }
 
@@ -481,6 +466,7 @@ public class GuiController implements Initializable {
             hardDropClip  = loadClip("/sounds/hard_drop.wav");
             gameOverClip  = loadClip("/sounds/game_over.wav");
             lineClearSound = loadClip("/sounds/line_clear.wav");
+            levelUpClip = loadClip("/sounds/level_up.wav");
 
             URL bgmUrl = getClass().getResource("/sounds/bgm.mp3");
             if (bgmUrl != null) {
@@ -521,9 +507,12 @@ public class GuiController implements Initializable {
 
     private void stopBackgroundMusic() {
         if (backgroundPlayer != null) {
+            // Pause playback and hard-mute so nothing leaks through
             backgroundPlayer.pause();
+            backgroundPlayer.setVolume(0.0);
         }
     }
+
 
     private void updateMusicToggleText() {
         if (musicToggleButton != null) {
@@ -569,6 +558,14 @@ public class GuiController implements Initializable {
         }
         lineClearSound.setVolume(masterVolume);
         lineClearSound.play();
+    }
+
+    private void playLevelUpSound() {
+        if (!sfxEnabled || levelUpClip == null) {
+            return;
+        }
+        levelUpClip.setVolume(masterVolume);
+        levelUpClip.play();
     }
 
     private void playGameOverSound() {
@@ -705,7 +702,7 @@ public class GuiController implements Initializable {
     }
 
     private void moveDown(MoveEvent event) {
-        if (!isPause.getValue()) {
+        if (isPause.getValue() == Boolean.FALSE) {
             DownData downData = eventListener.onDownEvent(event);
 
             // only plays soft drop sound for user initiated drops, not timer thread
@@ -713,41 +710,42 @@ public class GuiController implements Initializable {
                 playSoftDropSound();
             }
 
-            // now centralised: line-clear SFX + +score popup
+            // handle line clear popup + SFX (uses DownData, not ClearRow)
             handleLineClear(downData);
 
+            // update active brick view
             refreshBrick(downData.getViewData());
         }
         gamePanel.requestFocus();
     }
 
-
     private void hardDrop() {
-        // don’t do anything if paused or game over
-        if (isPause.getValue() || isGameOver.getValue()) {
+        // Don’t do anything if paused or game over
+        if (isPause.getValue() == Boolean.TRUE || isGameOver.getValue() == Boolean.TRUE) {
             return;
         }
 
         DownData downData;
 
-        // keep dropping until the piece locks and we get clear-row info
+        // Keep dropping until the brick locks / a new piece is spawned
         do {
             downData = eventListener.onDownEvent(
                 new MoveEvent(EventType.DOWN, EventSource.USER)
             );
         } while (downData.getClearRow() == null);
 
-        // hard-drop sound
+        // Now the piece has actually landed -> play hard drop SFX once
         playHardDropSound();
 
-        // update lines + level HUD and show +score popup + line-clear SFX
+        // Handle line clear popup + line clear SFX (shared with soft drops)
         handleLineClear(downData);
 
-        // refresh the active brick view (new piece)
+        // Refresh the active brick view (this will now be the newly spawned piece)
         refreshBrick(downData.getViewData());
 
         gamePanel.requestFocus();
     }
+
 
     private void togglePause() {
         // do not pause after game over or before timeline exists
@@ -834,6 +832,32 @@ public class GuiController implements Initializable {
         scoreLabel.textProperty().bind(integerProperty.asString());
     }
 
+    public void bindLevel(IntegerProperty levelProperty) {
+        if (levelLabel != null) {
+            levelLabel.textProperty().bind(levelProperty.asString());
+        }
+    }
+
+    public void bindLines(IntegerProperty linesProperty) {
+        if (linesLabel != null) {
+            linesLabel.textProperty().bind(linesProperty.asString());
+        }
+    }
+
+    public void onLevelUp(int newLevel) {
+        NotificationPanel notificationPanel =
+            new NotificationPanel("LEVEL " + newLevel);
+        groupNotification.getChildren().add(notificationPanel);
+        notificationPanel.showScore(groupNotification.getChildren());
+
+        // make bricks fall faster for this level
+        updateDropSpeedForLevel(newLevel);
+
+        // play a short "level up" jingle
+        playLevelUpSound();
+    }
+
+
     public void gameOver() {
         timeLine.stop();
         isGameOver.setValue(Boolean.TRUE);
@@ -852,14 +876,15 @@ public class GuiController implements Initializable {
         }
     }
 
-
     public void newGame(ActionEvent actionEvent) {
+        // Stop the drop timer if it exists and reset speed to level 1
         if (timeLine != null) {
             timeLine.stop();
+            timeLine.setRate(1.0);
         }
 
-        /* Immediately hide current active and ghost bricks so the last piece
-         from the previous game doesn't flash briefly */
+        // Hide current active brick so the last piece from the previous
+        // game doesn't flash briefly
         if (rectangles != null) {
             for (Rectangle[] row : rectangles) {
                 for (Rectangle r : row) {
@@ -870,6 +895,7 @@ public class GuiController implements Initializable {
             }
         }
 
+        // Hide ghost piece as well
         if (ghostRectangles != null) {
             for (Rectangle[] row : ghostRectangles) {
                 for (Rectangle r : row) {
@@ -880,9 +906,10 @@ public class GuiController implements Initializable {
             }
         }
 
-        // avoid mouse logic trying to move an old piece between games
+        // Avoid mouse logic trying to move an old piece between games
         lastViewData = null;
 
+        // Hide any overlays
         if (gameOverPanel != null) {
             gameOverPanel.setVisible(false);
         }
@@ -893,35 +920,43 @@ public class GuiController implements Initializable {
         isGameOver.set(false);
         isPause.set(false);
 
-        // reset HUD counters
-        totalLinesCleared = 0;
-        currentLevel = 1;
-        if (linesLabel != null) {
-            linesLabel.setText("0");
-        }
-        if (levelLabel != null) {
-            levelLabel.setText("1");
+        // Reset background music to the start of the track
+        if (backgroundPlayer != null) {
+            backgroundPlayer.stop();
+            backgroundPlayer.seek(javafx.util.Duration.ZERO);
         }
 
-        // let the controller/model reset the board and spawn a fresh piece
+        // Let the controller/model reset the board, score, level, lines
+        // and spawn a fresh piece
         eventListener.createNewGame();
+
         gamePanel.requestFocus();
 
+        // Restart the drop timeline from the beginning
         if (timeLine != null) {
             timeLine.playFromStart();
         }
 
+        // Resume background music if enabled (your existing helper)
         startBackgroundMusic();
-
-        // restart background music from the beginning for a fresh game
-        if (backgroundPlayer != null) {
-            backgroundPlayer.stop();                          // rewind to start
-            backgroundPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-            backgroundPlayer.setVolume(masterVolume);
-            if (musicEnabled) {
-                backgroundPlayer.play();
-            }
-        }
     }
+
+    // Level 1 -> rate 1.0 (normal)
+    // Level 2 -> 1.2x, Level 3 -> 1.4x, etc. (capped so it doesn't get insane)
+    private void updateDropSpeedForLevel(int level) {
+        if (timeLine == null) {
+            return;
+        }
+
+        double rate = 1.0 + 1.75 * (level - 1); // 20% faster per level
+        if (rate > 3.0) {
+            rate = 3.0; // safety cap
+        }
+
+        timeLine.setRate(rate);
+    }
+
 }
+
+
 
