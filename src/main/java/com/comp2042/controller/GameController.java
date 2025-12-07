@@ -9,8 +9,7 @@ import com.comp2042.model.SimpleBoard;
 import com.comp2042.model.DownData;
 import com.comp2042.model.ViewData;
 import com.comp2042.view.GuiController;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import com.comp2042.model.LevelManager;
 
 
 public class GameController implements InputEventListener {
@@ -23,16 +22,8 @@ public class GameController implements InputEventListener {
 
     private final GuiController viewGuiController;
 
-    // level / lines tracking for HUD
-    // current level shown in the HUD
-    private final IntegerProperty levelProperty = new SimpleIntegerProperty(1);
-
-    // total lines cleared across the current game
-    private final IntegerProperty linesClearedProperty = new SimpleIntegerProperty(0);
-
-    // how many more lines are needed to reach the *next* level
-    // level 1 -> 2: start with 3
-    private int linesRemainingForNextLevel = 3;
+    // encapsulates level progression + total lines cleared.
+    private final LevelManager levelManager = new LevelManager();
 
     public GameController(GuiController c) {
         viewGuiController = c;
@@ -40,11 +31,12 @@ public class GameController implements InputEventListener {
         viewGuiController.setEventListener(this);
         viewGuiController.initGameView(board.getBoardMatrix(), board.getViewData());
         viewGuiController.bindScore(board.getScore().scoreProperty());
-        // binding new HUD elements here
-        viewGuiController.bindLevel(levelProperty);
-        viewGuiController.bindLines(linesClearedProperty);
 
+        // bind HUD directly to the LevelManager properties
+        viewGuiController.bindLevel(levelManager.levelProperty());
+        viewGuiController.bindLines(levelManager.linesClearedProperty());
     }
+
 
     private ClearRow handleBrickLanded() {
         board.mergeBrickToBackground();
@@ -53,7 +45,12 @@ public class GameController implements InputEventListener {
         if (clearRow.getLinesRemoved() > 0) {
             board.getScore().add(clearRow.getScoreBonus());
 
-            applyLineClearProgression(clearRow.getLinesRemoved());
+            boolean leveledUp =
+                levelManager.applyLineClearProgression(clearRow.getLinesRemoved());
+            if (leveledUp && viewGuiController != null) {
+                // notify GUI so it can show popup, adjust drop speed, play SFX
+                viewGuiController.onLevelUp(levelManager.getLevel());
+            }
         }
 
         if (board.createNewBrick()) {
@@ -63,58 +60,6 @@ public class GameController implements InputEventListener {
         viewGuiController.refreshGameBackground(board.getBoardMatrix());
 
         return clearRow;
-    }
-
-    /*
-     * This applies the level progression rule whenever some lines are cleared.
-     *
-     * Level thresholds:
-     *   Level 1 -> 2: 3 lines
-     *   Level 2 -> 3: +5 lines
-     *   Level 3 -> 4: +7 lines
-     *
-     * Each step the requirement increases by 2.
-     */
-    private void applyLineClearProgression(int linesRemoved) {
-        if (linesRemoved <= 0) {
-            return;
-        }
-
-        // 1) update the total lines cleared (backing the HUD 'Lines' label)
-        int total = linesClearedProperty.get() + linesRemoved;
-        linesClearedProperty.set(total);
-
-        // 2) apply those lines against the "linesRemainingForNextLevel" bucket,
-        //    levelling up as many times as needed
-        int remaining = linesRemainingForNextLevel;
-        int toConsume = linesRemoved;
-        int currentLevel = levelProperty.get();
-
-        while (toConsume > 0) {
-            if (toConsume >= remaining) {
-                // we reach the next level
-                toConsume -= remaining;
-
-                currentLevel++;
-                levelProperty.set(currentLevel);
-
-                // requirement for the *next* level:
-                // for level N -> N+1: 3 + 2*(N-1)
-                int requiredForNext = 3 + 2 * (currentLevel - 1);
-                remaining = requiredForNext;
-
-                // optional visual/sound feedback in the GUI
-                if (viewGuiController != null) {
-                    viewGuiController.onLevelUp(currentLevel);
-                }
-            } else {
-                // stay on the same level, just reduce remaining
-                remaining -= toConsume;
-                toConsume = 0;
-            }
-        }
-
-        linesRemainingForNextLevel = remaining;
     }
 
     @Override
@@ -155,9 +100,7 @@ public class GameController implements InputEventListener {
         board.newGame();
 
         // reset level & lines for a fresh run
-        levelProperty.set(1);
-        linesClearedProperty.set(0);
-        linesRemainingForNextLevel = 3; // Level 1 -> 2 needs 3 lines
+        levelManager.reset();
 
         viewGuiController.refreshGameBackground(board.getBoardMatrix());
     }
