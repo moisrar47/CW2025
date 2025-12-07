@@ -128,9 +128,6 @@ public class GuiController implements Initializable {
 
     private boolean ignoreNextMouseClick = false;
 
-    private int totalLinesCleared = 0;
-    private int currentLevel = 1;
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         Font.loadFont(getClass().getClassLoader().getResource("digital.ttf").toExternalForm(), 38);
@@ -197,11 +194,7 @@ public class GuiController implements Initializable {
         // anchor the grid to the bottom of the cyan BorderPane
         BorderPane.setAlignment(gamePanel, Pos.BOTTOM_CENTER);
 
-        brickPanel.toFront(); // this ensures the falling brick layer is drawn above the background grid
-
-        // small fixed margin so the grid is not glued to the top left of the window
-        // gameBoard.setLayoutX(20);
-        // gameBoard.setLayoutY(20);
+        brickPanel.toFront(); // this ensures the falling bricklayer is drawn above the background grid
 
         initAudio();
         updateMusicToggleText();
@@ -746,7 +739,6 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
-
     private void togglePause() {
         // do not pause after game over or before timeline exists
         if (isGameOver.get() || timeLine == null) {
@@ -767,7 +759,6 @@ public class GuiController implements Initializable {
             gamePanel.requestFocus();
         }
     }
-
 
     @FXML
     private void handleResume(ActionEvent event) {
@@ -948,7 +939,7 @@ public class GuiController implements Initializable {
             return;
         }
 
-        double rate = 1.0 + 1.75 * (level - 1); // 20% faster per level
+        double rate = 1.0 + 0.75 * (level - 1); // 75% faster per level
         if (rate > 3.0) {
             rate = 3.0; // safety cap
         }
