@@ -45,6 +45,7 @@ import java.util.ResourceBundle;
 public class GuiController implements Initializable {
 
     private static final int BRICK_SIZE = 26;
+    private static final int NEXT_BRICK_SIZE = BRICK_SIZE - 8;
     private static final int HIDDEN_TOP_ROWS = 2;  // top rows aren't shown to player
     private static final int DROP_INTERVAL_MS = 800; // decent brick speed
     private int currentDropIntervalMs = DROP_INTERVAL_MS;
@@ -57,6 +58,9 @@ public class GuiController implements Initializable {
 
     @FXML
     private GridPane gamePanel;
+
+    @FXML
+    private GridPane nextPiecePanel;
 
     @FXML
     private StackPane pauseOverlay;
@@ -100,11 +104,13 @@ public class GuiController implements Initializable {
 
     private Rectangle[][] rectangles;
     private Rectangle[][] ghostRectangles;
+    private Rectangle[][] nextPieceRectangles;
+
     private ViewData lastViewData;
 
     private Timeline timeLine;
 
-    // Audio (delegated to AudioManager to reduce GuiController responsibilities)
+    // Audio (basically delegated to AudioManager to reduce GuiController responsibilities)
     private final AudioManager audioManager = new AudioManager();
 
     private final BooleanProperty isPause = new SimpleBooleanProperty();
@@ -181,9 +187,13 @@ public class GuiController implements Initializable {
 
         brickPanel.toFront(); // this ensures the falling bricklayer is drawn above the background grid
 
+        /* this will shift notifications left so they are centered over the main playfield,
+         not over the whole window (which now includes the NEXT panel) */
+        groupNotification.setTranslateX(-60); // this value is eye-balled
+
         updateMusicToggleText();
 
-        // start music from the get-go (only if not paused / game over)
+        // start music from the get go (only if not paused / game over)
         Platform.runLater(() ->
             audioManager.startBackgroundMusic(isPause.get(), isGameOver.get())
         );
@@ -201,40 +211,66 @@ public class GuiController implements Initializable {
     }
 
     public void initGameView(int[][] boardMatrix, ViewData brick) {
+        // main board grid
         displayMatrix = new Rectangle[boardMatrix.length][boardMatrix[0].length];
-        for (int i = HIDDEN_TOP_ROWS; i < boardMatrix.length; i++) {
-            for (int j = 0; j < boardMatrix[i].length; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                // uses board value (0 at start) so to get black fill + grid stroke
-                setRectangleData(boardMatrix[i][j], rectangle);
-                displayMatrix[i][j] = rectangle;
-                gamePanel.add(rectangle, j, i - HIDDEN_TOP_ROWS);
+        for (int row = HIDDEN_TOP_ROWS; row < boardMatrix.length; row++) {
+            for (int col = 0; col < boardMatrix[row].length; col++) {
+                Rectangle cell = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                setRectangleData(boardMatrix[row][col], cell);
+                displayMatrix[row][col] = cell;
+                gamePanel.add(cell, col, row - HIDDEN_TOP_ROWS);
             }
         }
 
-        rectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
+        // active brick 4x4 matrix
+        int brickRows = brick.getBrickData().length;
+        int brickCols = brick.getBrickData()[0].length;
 
-        for (int i = 0; i < brick.getBrickData().length; i++) {
-            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                setActiveBrickRectangleData(brick.getBrickData()[i][j], rectangle);
-                rectangles[i][j] = rectangle;
-                brickPanel.getChildren().add(rectangle);
+        rectangles = new Rectangle[brickRows][brickCols];
+        for (int r = 0; r < brickRows; r++) {
+            for (int c = 0; c < brickCols; c++) {
+                Rectangle rect = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                setActiveBrickRectangleData(brick.getBrickData()[r][c], rect);
+                rectangles[r][c] = rect;
+                brickPanel.getChildren().add(rect);
             }
         }
 
-        // ghost outline uses the same 4x4 structure
-        ghostRectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
-        for (int i = 0; i < brick.getBrickData().length; i++) {
-            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                rectangle.setVisible(false); // start hidden
-                ghostRectangles[i][j] = rectangle;
-                ghostPanel.getChildren().add(rectangle);
+        // ghost brick 4x4 matrix
+        ghostRectangles = new Rectangle[brickRows][brickCols];
+        for (int r = 0; r < brickRows; r++) {
+            for (int c = 0; c < brickCols; c++) {
+                Rectangle rect = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                rect.setVisible(false);
+                ghostRectangles[r][c] = rect;
+                ghostPanel.getChildren().add(rect);
             }
         }
 
-        // positions the active brick after the layout pass to avoid the initial "flash" issue
+        // next piece preview grid (created once)
+        if (nextPiecePanel != null) {
+            int[][] nextData = brick.getNextBrickData();
+            if (nextData != null) {
+                int rows = nextData.length;
+                int cols = nextData[0].length;
+
+                nextPieceRectangles = new Rectangle[rows][cols];
+                nextPiecePanel.getChildren().clear();
+
+                for (int r = 0; r < rows; r++) {
+                    for (int c = 0; c < cols; c++) {
+                        Rectangle rect = new Rectangle(NEXT_BRICK_SIZE, NEXT_BRICK_SIZE);
+                        nextPieceRectangles[r][c] = rect;
+                        nextPiecePanel.add(rect, c, r);
+                    }
+                }
+
+                // initial fill / visibility
+                refreshNextPiece(brick);
+            }
+        }
+
+        // position active brick (and ghost + preview) after layout
         Platform.runLater(() -> refreshBrick(brick));
 
         // make the cyan BorderPane exactly wrap the visible grid
@@ -380,6 +416,38 @@ public class GuiController implements Initializable {
                     setGhostRectangleData(color, ghostRect);
                 }
             }
+
+            // 3) update the next piece preview window
+            refreshNextPiece(brick);
+        }
+    }
+
+    private void refreshNextPiece(ViewData brick) {
+        if (nextPiecePanel == null || nextPieceRectangles == null) {
+            return;
+        }
+
+        int[][] nextData = brick.getNextBrickData();
+        if (nextData == null) {
+            return;
+        }
+
+        int rows = nextData.length;
+        int cols = nextData[0].length;
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                Rectangle rect = nextPieceRectangles[r][c];
+                int color = nextData[r][c];
+
+                if (color == 0) {
+                    rect.setVisible(false);
+                    setActiveBrickRectangleData(0, rect);
+                } else {
+                    rect.setVisible(true);
+                    setActiveBrickRectangleData(color, rect);
+                }
+            }
         }
     }
 
@@ -433,6 +501,11 @@ public class GuiController implements Initializable {
         NotificationPanel notificationPanel =
             new NotificationPanel("+" + downData.getClearRow().getScoreBonus());
         groupNotification.getChildren().add(notificationPanel);
+
+        // score popup stays roughly in the centre
+        notificationPanel.setTranslateX(-25);
+        notificationPanel.setTranslateY(10);
+
         notificationPanel.showScore(groupNotification.getChildren());
 
         // line-clear SFX
@@ -622,11 +695,11 @@ public class GuiController implements Initializable {
         if (pauseNow) {
             timeLine.pause();
             pauseOverlay.setVisible(true);
-            audioManager.stopBackgroundMusic();
+            audioManager.pauseBackgroundMusic();
         } else {
             pauseOverlay.setVisible(false);
             timeLine.play();
-            audioManager.startBackgroundMusic(isPause.get(), isGameOver.get());
+            audioManager.resumeBackgroundMusic(isGameOver.get()); // resume from same spot
             gamePanel.requestFocus();
         }
     }
@@ -714,6 +787,10 @@ public class GuiController implements Initializable {
         NotificationPanel notificationPanel =
             new NotificationPanel("LEVEL " + newLevel);
         groupNotification.getChildren().add(notificationPanel);
+
+        // put LEVEL text slightly above the score popup
+        notificationPanel.setTranslateY(-70); // moves it up;
+
         notificationPanel.showScore(groupNotification.getChildren());
 
         // make bricks fall faster for this level
@@ -722,7 +799,6 @@ public class GuiController implements Initializable {
         // play a short "level up" jingle
         audioManager.playLevelUpSound();
     }
-
 
     public void gameOver() {
         timeLine.stop();
@@ -811,7 +887,7 @@ public class GuiController implements Initializable {
             return;
         }
 
-        double rate = 1.0 + 0.75 * (level - 1); // 75% faster per level
+        double rate = 1.0 + 0.25 * (level - 1); // 25% faster per level
         if (rate > 3.0) {
             rate = 3.0; // safety cap
         }

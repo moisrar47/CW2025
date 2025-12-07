@@ -17,49 +17,92 @@
            xmlns:fx="http://javafx.com/fxml">
 
     <!-- Game area -->
-    <VBox alignment="TOP_CENTER" spacing="5">
-
-        <!-- top HUD: score + level + lines -->
-        <HBox alignment="CENTER"
-              spacing="12"
-              translateY="-6"
-              style="-fx-padding: 8 0 0 0;">
-            <!-- score -->
-            <Label text="SCORE:"
-                   styleClass="hudLabel"/>
-
-            <Label fx:id="scoreLabel"
-                   text="0"
-                   styleClass="hudValue"/>
-
-            <!-- level -->
-            <Label text="LEVEL:"
-                   styleClass="hudLabel"/>
-
-            <Label fx:id="levelLabel"
-                   text="1"
-                   styleClass="hudValue"/>
-
-            <!-- lines -->
-            <Label text="LINES:"
-                   styleClass="hudLabel"/>
-
-            <Label fx:id="linesLabel"
-                   text="0"
-                   styleClass="hudValue"/>
-
-            <!-- spacer to push anything else to the right if needed later -->
-            <!-- (no Region here anymore so the HUD can stay centered) -->
-        </HBox>
-
+    <VBox alignment="TOP_CENTER"
+          spacing="5"
+          style="-fx-padding: 12 0 0 0;">  <!-- pushes everything down a bit -->
         <StackPane alignment="CENTER">
             <BorderPane styleClass="gameBoard" fx:id="gameBoard">
                 <center>
-                    <StackPane alignment="TOP_LEFT">
-                        <GridPane fx:id="gamePanel" hgap="1" vgap="1"/>
-                        <Pane fx:id="ghostPanel"/>
-                        <Pane fx:id="brickPanel"/>
-                    </StackPane>
+                    <HBox spacing="24" alignment="CENTER_LEFT">
+
+                        <!-- Left side: title + main playfield -->
+                        <StackPane>
+                            <!-- yellow TETRIS title above the grid -->
+                            <Label text="TETRIS"
+                                   StackPane.alignment="TOP_CENTER"
+                                   styleClass="hudLabel"
+                                   style="-fx-font-size: 24;"/>
+
+                            <!-- grid and bricks, nudged down slightly -->
+                            <StackPane alignment="TOP_LEFT" translateY="28">
+                                <GridPane fx:id="gamePanel" hgap="1" vgap="1"/>
+                                <Pane fx:id="ghostPanel"/>
+                                <Pane fx:id="brickPanel"/>
+                            </StackPane>
+                        </StackPane>
+
+                        <!-- Right-hand column: HUD + next piece -->
+                        <VBox alignment="TOP_CENTER" spacing="10">
+
+                            <!-- HUD stacked vertically, bigger and centred -->
+                            <VBox alignment="CENTER" spacing="10" translateY="80">
+                                <HBox alignment="CENTER" spacing="10">
+                                    <Label text="SCORE:"
+                                           styleClass="hudLabel"
+                                           style="-fx-font-size: 22;"/>
+                                    <Label fx:id="scoreLabel"
+                                           text="0"
+                                           styleClass="hudValue"
+                                           style="-fx-font-size: 22;"/>
+                                </HBox>
+
+                                <HBox alignment="CENTER" spacing="10">
+                                    <Label text="LEVEL:"
+                                           styleClass="hudLabel"
+                                           style="-fx-font-size: 22;"/>
+                                    <Label fx:id="levelLabel"
+                                           text="1"
+                                           styleClass="hudValue"
+                                           style="-fx-font-size: 22;"/>
+                                </HBox>
+
+                                <HBox alignment="CENTER" spacing="10">
+                                    <Label text="LINES:"
+                                           styleClass="hudLabel"
+                                           style="-fx-font-size: 22;"/>
+                                    <Label fx:id="linesLabel"
+                                           text="0"
+                                           styleClass="hudValue"
+                                           style="-fx-font-size: 22;"/>
+                                </HBox>
+                            </VBox>
+
+                            <!-- spacer pushes NEXT section towards vertical centre -->
+                            <Region VBox.vgrow="ALWAYS"/>
+
+                            <!-- NEXT section kept tight and centred -->
+                            <VBox alignment="CENTER" spacing="8">
+                                <Label text="NEXT PIECE"
+                                       styleClass="pauseSubtitle"/>
+
+                                <StackPane alignment="CENTER"
+                                           prefWidth="140" minWidth="140" maxWidth="140"
+                                           prefHeight="140" minHeight="140" maxHeight="140"
+                                           style="-fx-background-color: #111111;
+                                                  -fx-padding: 8;
+                                                  -fx-border-color: #444444;
+                                                  -fx-border-width: 1;">
+                                    <GridPane fx:id="nextPiecePanel"
+                                              hgap="2" vgap="2"
+                                              alignment="CENTER"/>
+                                </StackPane>
+                            </VBox>
+
+                            <!-- optional bottom spacer to keep NEXT really centred -->
+                            <Region VBox.vgrow="ALWAYS"/>
+
+                        </VBox>
+                    </HBox>
                 </center>
             </BorderPane>
         </StackPane>
@@ -105,7 +148,7 @@
                         onAction="#handleToggleMusic"
                         styleClass="ipad-dark-grey"/>
 
-                <Button fx:id="sfxToggleButton"
+                <Button
                         text="SFX: On"
                         onAction="#handleToggleSfx"
                         styleClass="ipad-dark-grey"/>

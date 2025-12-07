@@ -119,6 +119,25 @@ public class AudioManager {
         }
     }
 
+    // pause without resetting to the beginning
+    public void pauseBackgroundMusic() {
+        if (backgroundPlayer != null) {
+            backgroundPlayer.pause();
+        }
+    }
+
+    // resume from current position (used when unpausing)
+    public void resumeBackgroundMusic(boolean gameOver) {
+        if (!musicEnabled || backgroundPlayer == null) {
+            return;
+        }
+        if (gameOver) {
+            return;
+        }
+        backgroundPlayer.setVolume(masterVolume);
+        backgroundPlayer.play();
+    }
+
     // SFX helpers
     public void playMoveSound() {
         if (!sfxEnabled || moveClip == null) return;

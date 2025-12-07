@@ -14,7 +14,7 @@ public class Main extends Application {
 
     private static final String GAME_LAYOUT_FXML = "gameLayout.fxml";
     private static final String WINDOW_TITLE = "TetrisJFX";
-    private static final int SCENE_WIDTH = 360;
+    private static final int SCENE_WIDTH = 480;
     private static final int SCENE_HEIGHT = 640;
 
     @Override
