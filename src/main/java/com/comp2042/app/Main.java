@@ -23,6 +23,14 @@ public class Main extends Application {
     private static final int SCENE_WIDTH = 480;
     private static final int SCENE_HEIGHT = 640;
 
+    /**
+     * Called by the JavaFX runtime to start the application.
+     * <p>
+     * Sets up the primary stage, loads {@value #GAME_LAYOUT_FXML}, creates the
+     * {@link com.comp2042.view.GuiController}, and initialises the game and high scores.
+     *
+     * @param primaryStage the main application window provided by JavaFX
+     */
     @Override
     public void start(Stage primaryStage) throws Exception {
         URL layoutUrl = getClass().getClassLoader().getResource(GAME_LAYOUT_FXML);
@@ -50,6 +58,13 @@ public class Main extends Application {
 
     }
 
+    /**
+     * Standard Java entry point.
+     * Delegates to {@link javafx.application.Application#launch(String...)} to start
+     * the JavaFX application.
+     *
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         launch(args);
     }
