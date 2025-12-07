@@ -722,13 +722,20 @@ public class GuiController implements Initializable {
         isPause.set(pauseNow);
 
         if (pauseNow) {
+            // going INTO pause
             timeLine.pause();
             pauseOverlay.setVisible(true);
-            audioManager.pauseBackgroundMusic();
+
+            // ALWAYS stops/mutes BGM when paused
+            audioManager.stopBackgroundMusic();
         } else {
+            // coming OUT of pause
             pauseOverlay.setVisible(false);
             timeLine.play();
-            audioManager.resumeBackgroundMusic(isGameOver.get()); // resume from same spot
+
+            // only (re)start music if game is active
+            audioManager.startBackgroundMusic(false, false);
+
             gamePanel.requestFocus();
         }
     }
