@@ -726,14 +726,14 @@ public class GuiController implements Initializable {
             timeLine.pause();
             pauseOverlay.setVisible(true);
 
-            // ALWAYS mutes BGM when paused
+            // pause music at current position (no restart)
             audioManager.pauseBackgroundMusic();
         } else {
             // coming OUT of pause
             pauseOverlay.setVisible(false);
             timeLine.play();
 
-            // resume from current position (no restart)
+            // resume from current position if music is enabled and not game over
             audioManager.resumeBackgroundMusic(isGameOver.get());
 
             gamePanel.requestFocus();
@@ -778,11 +778,6 @@ public class GuiController implements Initializable {
             btn.setText(audioManager.isMusicEnabled() ? "Music: On" : "Music: Off");
         }
 
-        if (audioManager.isMusicEnabled()) {
-            audioManager.startBackgroundMusic(isPause.get(), isGameOver.get());
-        } else {
-            audioManager.stopBackgroundMusic();
-        }
         // give keyboard focus back to the game panel
         gamePanel.requestFocus();
     }
