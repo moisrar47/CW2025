@@ -8,9 +8,14 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
 import java.net.URL;
 
+/**
+ * JavaFX entry point for the Tetris game.
+ * <p>
+ * Loads the main FXML layout, initialises the GUI controller, and wires up the
+ * {@link com.comp2042.controller.GameController} and {@link com.comp2042.model.HighScoreManager}.
+ */
 public class Main extends Application {
 
     private static final String GAME_LAYOUT_FXML = "gameLayout.fxml";
