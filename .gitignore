@@ -3,6 +3,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
+highscores.txt
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

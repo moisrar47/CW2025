@@ -1,5 +1,6 @@
 package com.comp2042.app;
 
+import com.comp2042.model.HighScoreManager;
 import com.comp2042.controller.GameController;
 import com.comp2042.view.GuiController;
 import javafx.application.Application;
@@ -38,7 +39,10 @@ public class Main extends Application {
 
         primaryStage.show();
 
-        new GameController(guiController);
+        // create and load high scores
+        HighScoreManager highScoreManager = new HighScoreManager("highscores.txt");
+        new GameController(guiController, highScoreManager);
+
     }
 
     public static void main(String[] args) {

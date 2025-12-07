@@ -22,7 +22,7 @@ public class AudioManager {
     private AudioClip lineClearSound;
     private AudioClip levelUpClip;
 
-    private double masterVolume = 0.7;
+    private double masterVolume = 0.5;
     private boolean musicEnabled = true; // default ON
     private boolean sfxEnabled = true;
 

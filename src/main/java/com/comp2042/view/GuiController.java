@@ -1,5 +1,8 @@
 package com.comp2042.view;
 
+import com.comp2042.model.HighScoreEntry;
+import com.comp2042.controller.GameController;
+import com.comp2042.model.HighScoreManager;
 import com.comp2042.audio.AudioManager;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Button;
@@ -38,9 +41,11 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.StackPane;
-
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.List;
 
 public class GuiController implements Initializable {
 
@@ -93,10 +98,35 @@ public class GuiController implements Initializable {
     private GameOverPanel gameOverPanel;
 
     @FXML
+    private VBox highScoreListBox;
+
+    @FXML
+    private Label highScoreLine1;
+
+    @FXML
+    private Label highScoreLine2;
+
+    @FXML
+    private Label highScoreLine3;
+
+    @FXML
     private BorderPane gameBoard;
 
     @FXML
     private Slider volumeSlider;
+
+    @FXML
+    private StackPane highScoreOverlay;
+
+    @FXML
+    private Label highScoreScoreLabel;
+
+    @FXML
+    private TextField highScoreNameField;
+
+    private HighScoreManager highScoreManager;
+    private int lastFinalScore = 0;
+
 
     private Rectangle[][] displayMatrix;
 
@@ -167,7 +197,6 @@ public class GuiController implements Initializable {
                 }
             }
         });
-
 
         rootPane.addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
         rootPane.addEventFilter(MouseEvent.MOUSE_CLICKED, this::handleMouseClicked);
@@ -274,7 +303,7 @@ public class GuiController implements Initializable {
         Platform.runLater(() -> refreshBrick(brick));
 
         // make the cyan BorderPane exactly wrap the visible grid
-        gameBoard.applyCss(); // ensure insets are up to date
+        gameBoard.applyCss();
 
         int columns = boardMatrix[0].length;
         int visibleRows = boardMatrix.length - HIDDEN_TOP_ROWS;
@@ -551,7 +580,7 @@ public class GuiController implements Initializable {
         if (targetColumn < 0) targetColumn = 0;
         if (targetColumn >= columns) targetColumn = columns - 1;
 
-        // Find the horizontal coverage of the current piece: [pieceLeft, pieceRight]
+        // finds the horizontal coverage of the current piece: [pieceLeft, pieceRight]
         int[][] data = lastViewData.getBrickData();
         int baseX = lastViewData.getxPosition();
 
@@ -657,27 +686,27 @@ public class GuiController implements Initializable {
     }
 
     private void hardDrop() {
-        // Don’t do anything if paused or game over
+        // don’t do anything if paused or game over
         if (isPause.getValue() == Boolean.TRUE || isGameOver.getValue() == Boolean.TRUE) {
             return;
         }
 
         DownData downData;
 
-        // Keep dropping until the brick locks / a new piece is spawned
+        // keep dropping until the brick locks / a new piece is spawned
         do {
             downData = eventListener.onDownEvent(
                 new MoveEvent(EventType.DOWN, EventSource.USER)
             );
         } while (downData.getClearRow() == null);
 
-        // Now the piece has actually landed -> play hard drop SFX once
+        // now the piece has actually landed -> play hard drop SFX once
         audioManager.playHardDropSound();
 
-        // Handle line clear popup + line clear SFX (shared with soft drops)
+        // handle line clear popup + line clear SFX (shared with soft drops)
         handleLineClear(downData);
 
-        // Refresh the active brick view (this will now be the newly spawned piece)
+        // refresh the active brick view (this will now be the newly spawned piece)
         refreshBrick(downData.getViewData());
 
         gamePanel.requestFocus();
@@ -729,7 +758,7 @@ public class GuiController implements Initializable {
             Button btn = (Button) event.getSource();
             btn.setText(audioManager.isSfxEnabled() ? "SFX: On" : "SFX: Off");
         }
-        // Give keyboard focus back to the game panel
+        // give keyboard focus back to the game panel
         gamePanel.requestFocus();
     }
 
@@ -747,7 +776,7 @@ public class GuiController implements Initializable {
         } else {
             audioManager.stopBackgroundMusic();
         }
-        // Give keyboard focus back to the game panel
+        // give keyboard focus back to the game panel
         gamePanel.requestFocus();
     }
 
@@ -761,6 +790,28 @@ public class GuiController implements Initializable {
     private void handleGameOverPlayAgain(ActionEvent event) {
         ignoreNextMouseClick = true;
         newGame(event);
+    }
+
+    @FXML
+    private void handleHighScoreSave(javafx.event.ActionEvent event) {
+        if (highScoreOverlay != null) {
+            String name = highScoreNameField != null
+                ? highScoreNameField.getText().trim()
+                : "";
+            if (!name.isEmpty() && highScoreManager != null) {
+                highScoreManager.recordHighScore(name, lastFinalScore);
+            }
+            highScoreOverlay.setVisible(false);
+        }
+        showGameOverOverlay();
+    }
+
+    @FXML
+    private void handleHighScoreSkip(javafx.event.ActionEvent event) {
+        if (highScoreOverlay != null) {
+            highScoreOverlay.setVisible(false);
+        }
+        showGameOverOverlay();
     }
 
     public void setEventListener(InputEventListener eventListener) {
@@ -800,8 +851,60 @@ public class GuiController implements Initializable {
         audioManager.playLevelUpSound();
     }
 
+    private void showGameOverOverlay() {
+        // update the mini high-score table
+        if (highScoreListBox != null && highScoreManager != null) {
+            List<HighScoreEntry> entries = highScoreManager.getEntries();
+
+            // fill up to 3 lines
+            setHighScoreLine(highScoreLine1, 1, entries, 0);
+            setHighScoreLine(highScoreLine2, 2, entries, 1);
+            setHighScoreLine(highScoreLine3, 3, entries, 2);
+
+            highScoreListBox.setVisible(!entries.isEmpty());
+        }
+
+        if (gameOverOverlay != null) {
+            gameOverOverlay.setVisible(true);
+            gameOverOverlay.toFront();
+        }
+    }
+
+    private void setHighScoreLine(Label label, int rank,
+                                  List<HighScoreEntry> entries, int index) {
+        if (label == null) {
+            return;
+        }
+
+        if (entries != null && index < entries.size()) {
+            HighScoreEntry e = entries.get(index);
+            label.setText(rank + ". " + e.getPlayerName() + " - " + e.getScore());
+            label.setVisible(true);
+        } else {
+            label.setText("");
+            label.setVisible(false);
+        }
+    }
+
+    private void showHighScoreOverlay(int score) {
+        lastFinalScore = score;
+
+        if (highScoreScoreLabel != null) {
+            highScoreScoreLabel.setText("Score: " + score);
+        }
+        if (highScoreNameField != null) {
+            highScoreNameField.clear();
+        }
+        if (highScoreOverlay != null) {
+            highScoreOverlay.setVisible(true);
+            highScoreOverlay.toFront();
+        }
+    }
+
     public void gameOver() {
-        timeLine.stop();
+        if (timeLine != null) {
+            timeLine.stop();
+        }
         isGameOver.setValue(Boolean.TRUE);
 
         // stop music and play game over jingle
@@ -813,19 +916,36 @@ public class GuiController implements Initializable {
             pauseOverlay.setVisible(false);
         }
 
-        if (gameOverOverlay != null) {
-            gameOverOverlay.setVisible(true);
+        // determine final score from the HUD label
+        int finalScore = 0;
+        if (scoreLabel != null) {
+            try {
+                finalScore = Integer.parseInt(scoreLabel.getText());
+            } catch (NumberFormatException ignored) {
+                finalScore = 0;
+            }
+        }
+
+        // decide which overlay to show
+        if (highScoreManager != null && highScoreManager.isNewHighScore(finalScore)) {
+            showHighScoreOverlay(finalScore);
+        } else {
+            showGameOverOverlay();
         }
     }
 
+    public void setGameController(GameController controller) {
+        this.highScoreManager = controller.getHighScoreManager();
+    }
+
     public void newGame(ActionEvent actionEvent) {
-        // Stop the drop timer if it exists and reset speed to level 1
+        // stop the drop timer if it exists and reset speed to level 1
         if (timeLine != null) {
             timeLine.stop();
             timeLine.setRate(1.0);
         }
 
-        // Hide current active brick so the last piece from the previous
+        // hide current active brick so the last piece from the previous
         // game doesn't flash briefly
         if (rectangles != null) {
             for (Rectangle[] row : rectangles) {
@@ -837,7 +957,7 @@ public class GuiController implements Initializable {
             }
         }
 
-        // Hide ghost piece as well
+        // hide ghost piece as well
         if (ghostRectangles != null) {
             for (Rectangle[] row : ghostRectangles) {
                 for (Rectangle r : row) {
@@ -848,35 +968,38 @@ public class GuiController implements Initializable {
             }
         }
 
-        // Avoid mouse logic trying to move an old piece between games
+        // avoid mouse logic trying to move an old piece between games
         lastViewData = null;
 
-        // Hide any overlays
+        // hide any overlays
         if (gameOverPanel != null) {
             gameOverPanel.setVisible(false);
         }
         if (gameOverOverlay != null) {
             gameOverOverlay.setVisible(false);
         }
+        if (highScoreOverlay != null) {
+            highScoreOverlay.setVisible(false);
+        }
 
         isGameOver.set(false);
         isPause.set(false);
 
-        // Reset background music via AudioManager
+        // reset background music via AudioManager
         audioManager.stopBackgroundMusic();
 
-        // Let the controller/model reset the board, score, level, lines
-        // and spawn a fresh piece
+        /* let the controller/model reset the board, score, level, lines
+         and spawn a fresh piece */
         eventListener.createNewGame();
 
         gamePanel.requestFocus();
 
-        // Restart the drop timeline from the beginning
+        // restarts the drop timeline from the beginning
         if (timeLine != null) {
             timeLine.playFromStart();
         }
 
-        // Resume background music if enabled
+        // resume background music if enabled
         audioManager.startBackgroundMusic(isPause.get(), isGameOver.get());
     }
 

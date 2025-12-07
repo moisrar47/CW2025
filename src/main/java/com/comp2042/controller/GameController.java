@@ -10,7 +10,7 @@ import com.comp2042.model.DownData;
 import com.comp2042.model.ViewData;
 import com.comp2042.view.GuiController;
 import com.comp2042.model.LevelManager;
-
+import com.comp2042.model.HighScoreManager;
 
 public class GameController implements InputEventListener {
 
@@ -22,11 +22,18 @@ public class GameController implements InputEventListener {
 
     private final GuiController viewGuiController;
 
+    private final HighScoreManager highScoreManager;
+
     // encapsulates level progression + total lines cleared.
     private final LevelManager levelManager = new LevelManager();
 
-    public GameController(GuiController c) {
-        viewGuiController = c;
+    public GameController(GuiController c, HighScoreManager highScoreManager) {
+        this.viewGuiController = c;
+        this.highScoreManager = highScoreManager;
+
+        // Let GUI know about this GameController + highScores
+        viewGuiController.setGameController(this);
+
         board.createNewBrick();
         viewGuiController.setEventListener(this);
         viewGuiController.initGameView(board.getBoardMatrix(), board.getViewData());
@@ -37,7 +44,10 @@ public class GameController implements InputEventListener {
         viewGuiController.bindLines(levelManager.linesClearedProperty());
     }
 
-
+    public HighScoreManager getHighScoreManager() {
+        return highScoreManager;
+    }
+    
     private ClearRow handleBrickLanded() {
         board.mergeBrickToBackground();
         ClearRow clearRow = board.clearRows();
