@@ -9,10 +9,8 @@ import javafx.beans.property.SimpleIntegerProperty;
  */
 public final class Score {
 
-    /**
-     * JavaFX property representing the current score value.
-     * Enables automatic GUI updates via property binding.
-     */
+    // JavaFX property representing the current score value
+    // Enables automatic GUI updates via property binding
     private final IntegerProperty score = new SimpleIntegerProperty(0);
 
     /**
@@ -20,18 +18,16 @@ public final class Score {
      * <p>
      * Used by the GUI for real-time HUD binding.
      *
-     * @return the score property
+     * @return the observable score property
      */
     public IntegerProperty scoreProperty() {
         return score;
     }
 
     /**
-     * Returns the JavaFX property storing the score.
-     * <p>
-     * Used by the GUI for real-time HUD binding.
+     * Adds the specified amount to the current score.
      *
-     * @return the score property
+     * @param i the number of points to add to the score
      */
     public void add(int i){
         score.setValue(score.getValue() + i);
