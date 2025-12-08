@@ -1,4 +1,4 @@
-# COMP2042 Tetris Coursework – Moiz Israr (ID 20705922)
+# COMP2042 Tetris Coursework – Moiz Israr Malik (ID 20705922)
 
 This project is my maintenance and extension work for the COMP2042 CW2025 Tetris coursework.  
 I started from the provided CW2025 codebase and focused on cleaning up the design (MVC-style structure, clearer responsibilities, and tests) and then adding gameplay and quality-of-life features such as a pause menu, ghost piece, hard drop, level progression, audio, and a persistent high-score system.
@@ -17,40 +17,39 @@ Public GitHub repository (fork of the original CW2025 repo):
 
 ### Requirements
 
-- **Java:** Temurin OpenJDK 23 (project also compiles with Java 21)
+- **Java:** JDK 23 (project also compiles with Java 21)
 - **Maven:** 3.9.x
 - **IDE:** IntelliJ IDEA (used for development and testing)
 
 ### Running in IntelliJ IDEA
 
-1. Clone the repository from GitHub:
+1. **Clone the repository from GitHub:**
 
         git clone https://github.com/moisrar47/CW2025.git
         cd CW2025
 
-2. Open IntelliJ IDEA and choose **“Open”**. Select the cloned project folder.  
-   IntelliJ should detect it as a Maven project automatically.
+2. **Open IntelliJ IDEA** and choose **“Open”**.  
+   Select the project folder (the one containing `pom.xml`).  
+   IntelliJ will automatically detect it as a Maven project.
 
-3. Make sure the **Project SDK** is set to a compatible JDK (I used Temurin 23).
+3. **Ensure the Project SDK is JDK 23 (or Java 21).**  
+   You can check/set this via:
+    - *File → Project Structure → Project → SDK*
 
-4. Maven will download the dependencies defined in `pom.xml` (including JavaFX).
+4. **Open the Maven tool window** in IntelliJ  
+   (usually a vertical panel on the right side of the IDE).
 
-5. Run the game by launching the main class:
+5. In the Maven window, expand the project entry (e.g. `CW2025`) and navigate to:
 
-   - `com.comp2042.app.Main`
+        Plugins → javafx → javafx:run
 
-   You can do this by right-clicking `Main` in the Project view and selecting **Run 'Main'**.
+6. **Double-click `javafx:run`** to start the game.
 
-### Running from the Command Line (Maven)
-
-From the project root (where `pom.xml` is located):
-
-        mvn clean compile
-        mvn javafx:run
-
-This uses the JavaFX Maven plugin configured in `pom.xml` and starts `com.comp2042.app.Main`.
-
-No manual `--module-path` JVM arguments are needed; everything is managed via Maven.
+   This will:
+    - Automatically download all required dependencies (including JavaFX)
+    - Compile the project
+    - Launch the game using the JavaFX Maven plugin
+    - No manual VM arguments or module-path configuration is needed
 
 ---
 
@@ -236,7 +235,12 @@ I have not identified any major broken features. There may still be minor edge-c
 - Pause menu overlay and audio controls.
 - High-score saving and loading.
 
-If the marker encounters any unexpected behaviour, it is unintentional and not known at the time of submission.
+There is one minor UX issue related to audio:
+
+- If you start a **New Game from the pause menu**, the background music can continue playing while the pause overlay is visible. It can still be muted or lowered using the audio controls, and this behaviour does **not** occur when using **“Play Again”** from the game-over screen.
+
+
+If any unexpected behaviour is encountered, it is unintentional and not known at the time of submission.
 
 ---
 
@@ -365,7 +369,7 @@ I encountered several unexpected challenges while working on this coursework. Be
 - **Java / Maven / JavaFX setup**
   - Initially struggled to get JavaFX to run cleanly with Maven and my JDK version.
   - Fixed this by:
-    - Installing Temurin OpenJDK and configuring it as the project SDK.
+    - Installing Temurin OpenJDK 23 and configuring it as the project SDK.
     - Adjusting `pom.xml` to use the JavaFX Maven plugin with the correct `mainClass`.
     - Verifying that `mvn clean compile` and `mvn javafx:run` work from the command line.
 
