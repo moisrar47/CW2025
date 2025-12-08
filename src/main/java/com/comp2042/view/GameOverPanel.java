@@ -19,5 +19,5 @@ public class GameOverPanel extends BorderPane {
         gameOverLabel.getStyleClass().add("gameOverStyle");
         setCenter(gameOverLabel);
     }
-    
+
 }
