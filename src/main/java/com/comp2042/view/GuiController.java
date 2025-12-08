@@ -47,12 +47,27 @@ import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.List;
 
+/**
+ * JavaFX controller for the main Tetris game UI.
+ * <p>
+ * Handles keyboard and mouse input, HUD updates, pause and game over overlays,
+ * ghost piece and next-piece rendering, drop timing, audio integration, and
+ * high-score interactions.
+ */
 public class GuiController implements Initializable {
 
+    /** Pixel size of each visible cell in the main playfield. */
     private static final int BRICK_SIZE = 26;
+
+    /** Pixel size used for cells in the next-piece preview panel. */
     private static final int NEXT_BRICK_SIZE = BRICK_SIZE - 8;
+
+    /** Number of top rows that are hidden from the player in the visible grid. */
     private static final int HIDDEN_TOP_ROWS = 2;  // top rows aren't shown to player
+
+    /** Base drop interval (in milliseconds) for the falling bricks at level 1. */
     private static final int DROP_INTERVAL_MS = 800; // decent brick speed
+
     private int currentDropIntervalMs = DROP_INTERVAL_MS;
 
     private static final Color GRID_COLOR = Color.rgb(40, 40, 40); // dark grey lines
@@ -149,6 +164,15 @@ public class GuiController implements Initializable {
 
     private boolean ignoreNextMouseClick = false;
 
+    /**
+     * Called automatically by the JavaFX runtime after FXML loading.
+     * <p>
+     * Sets up fonts, key and mouse handlers, pause and game over overlays,
+     * audio controls, and initial background music state.
+     *
+     * @param location  location used to resolve relative paths, or {@code null}
+     * @param resources the resources used to localise the root object, or {@code null}
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         Font.loadFont(getClass().getClassLoader().getResource("digital.ttf").toExternalForm(), 38);
@@ -239,6 +263,16 @@ public class GuiController implements Initializable {
 
     }
 
+    /**
+     * Initialises the visible game view based on the given board matrix and
+     * initial brick view data.
+     * <p>
+     * Creates the background grid, active brick and ghost layers, next-piece
+     * preview, resizes the surrounding frame, and starts the drop timeline.
+     *
+     * @param boardMatrix the board matrix representing settled blocks
+     * @param brick       snapshot of the current brick and next-piece data
+     */
     public void initGameView(int[][] boardMatrix, ViewData brick) {
         // main board grid
         displayMatrix = new Rectangle[boardMatrix.length][boardMatrix[0].length];
@@ -336,6 +370,12 @@ public class GuiController implements Initializable {
         timeLine.play();
     }
 
+    /**
+     * Maps a numeric cell value to a corresponding {@link Color}.
+     *
+     * @param i the cell value
+     * @return a {@link Paint} used to fill that cell
+     */
     private Paint getFillColor(int i) {
         Paint returnPaint;
         switch (i) {
@@ -370,6 +410,12 @@ public class GuiController implements Initializable {
         return returnPaint;
     }
 
+    /**
+     * Updates the active brick, ghost piece, and next-piece preview based on
+     * the provided {@link ViewData}, unless the game is currently paused.
+     *
+     * @param brick view data describing the current brick state
+     */
     private void refreshBrick(ViewData brick) {
         if (isPause.getValue() == Boolean.FALSE) {
             lastViewData = brick;
@@ -451,6 +497,12 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Updates the next-piece preview panel to match the next brick contained
+     * in the given {@link ViewData}.
+     *
+     * @param brick view data containing the next piece matrix
+     */
     private void refreshNextPiece(ViewData brick) {
         if (nextPiecePanel == null || nextPieceRectangles == null) {
             return;
@@ -480,6 +532,11 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Redraws the background grid using the given board matrix.
+     *
+     * @param board the current board state to render
+     */
     public void refreshGameBackground(int[][] board) {
         for (int i = HIDDEN_TOP_ROWS; i < board.length; i++) {
             for (int j = 0; j < board[i].length; j++) {
@@ -488,6 +545,12 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Styles a background grid cell rectangle according to the given color code.
+     *
+     * @param color     numeric cell value
+     * @param rectangle the {@link Rectangle} to style
+     */
     private void setRectangleData(int color, Rectangle rectangle) {
         rectangle.setFill(getFillColor(color));
         rectangle.setStroke(GRID_COLOR); // nice grid line
@@ -496,6 +559,13 @@ public class GuiController implements Initializable {
         rectangle.setArcWidth(0);
     }
 
+    /**
+     * Styles a rectangle representing a cell of the active falling brick.
+     * Empty cells are made transparent.
+     *
+     * @param color     numeric cell value
+     * @param rectangle the {@link Rectangle} to style
+     */
     private void setActiveBrickRectangleData(int color, Rectangle rectangle) {
         if (color == 0) {
             // don't show anything for empty cells in the 4x4 brick matrix
@@ -510,6 +580,12 @@ public class GuiController implements Initializable {
         rectangle.setArcWidth(0);
     }
 
+    /**
+     * Styles a rectangle used for the ghost-piece outline.
+     *
+     * @param color     numeric cell value
+     * @param rectangle the {@link Rectangle} to style
+     */
     private void setGhostRectangleData(int color, Rectangle rectangle) {
         // this is only called when color != 0 but keeps styling explicit
         rectangle.setFill(Color.TRANSPARENT);
@@ -519,6 +595,14 @@ public class GuiController implements Initializable {
         rectangle.setArcWidth(0);
     }
 
+    /**
+     * Handles UI and audio feedback when lines are cleared.
+     * <p>
+     * Shows a floating "+score" notification and plays the line-clear sound
+     * if any lines were actually removed.
+     *
+     * @param downData result of the last downward move, including clear-row info
+     */
     private void handleLineClear(DownData downData) {
         if (downData == null ||
             downData.getClearRow() == null ||
@@ -541,6 +625,9 @@ public class GuiController implements Initializable {
         audioManager.playLineClearSound();
     }
 
+    /**
+     * Updates the music toggle button text to reflect the current music state.
+     */
     private void updateMusicToggleText() {
         if (musicToggleButton != null) {
             musicToggleButton.setText(
@@ -549,6 +636,12 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Handles horizontal mouse movement over the playfield by moving the
+     * active brick left or right, if appropriate and if the game is active.
+     *
+     * @param mouseEvent the mouse movement event
+     */
     private void handleMouseMoved(MouseEvent mouseEvent) {
         if (isPause.get() || pauseOverlay.isVisible() || isGameOver.get()
             || eventListener == null || lastViewData == null) {
@@ -622,6 +715,12 @@ public class GuiController implements Initializable {
 
     }
 
+    /**
+     * Handles mouse clicks for gameplay, using left or middle clicks to
+     * trigger a hard drop when no overlay is active.
+     *
+     * @param mouseEvent the mouse click event
+     */
     private void handleMouseClicked(MouseEvent mouseEvent) {
         // 1) Swallow the very next click after closing a menu
         if (ignoreNextMouseClick) {
@@ -650,6 +749,12 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    /**
+     * Handles scroll wheel input by rotating the active piece, if the
+     * game is not paused or over.
+     *
+     * @param event the scroll event
+     */
     private void handleScroll(ScrollEvent event) {
         if (isPause.get() || isGameOver.get() || eventListener == null) {
             return;
@@ -667,6 +772,12 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    /**
+     * Moves the active brick down by one step, updates the view, plays
+     * appropriate sounds, and processes any resulting line clears.
+     *
+     * @param event the move event indicating the source of the drop
+     */
     private void moveDown(MoveEvent event) {
         if (isPause.getValue() == Boolean.FALSE) {
             DownData downData = eventListener.onDownEvent(event);
@@ -685,6 +796,11 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    /**
+     * Performs a hard drop of the active brick, repeatedly moving it down
+     * until it locks, then playing the hard-drop sound, handling any line
+     * clears, and refreshing the view.
+     */
     private void hardDrop() {
         // don’t do anything if paused or game over
         if (isPause.getValue() == Boolean.TRUE || isGameOver.getValue() == Boolean.TRUE) {
@@ -712,6 +828,12 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    /**
+     * Toggles the pause state of the game.
+     * <p>
+     * Pauses or resumes the drop timeline, shows or hides the pause overlay,
+     * and pauses or resumes background music accordingly.
+     */
     private void togglePause() {
         // do not pause after game over or before timeline exists
         if (isGameOver.get() || timeLine == null) {
@@ -740,6 +862,12 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Handles the pause overlay "Resume" button, unpausing the game if
+     * currently paused and safely ignoring the next click.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleResume(ActionEvent event) {
         if (isPause.get()) {
@@ -748,6 +876,12 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Handles the pause overlay "New Game" button by clearing pause state
+     * and starting a fresh game.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleNewGameFromPause(ActionEvent event) {
         // clear pause state and start a fresh game
@@ -757,6 +891,11 @@ public class GuiController implements Initializable {
         newGame(event);
     }
 
+    /**
+     * Toggles sound effects on or off and updates the SFX button label.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleToggleSfx(ActionEvent event) {
         audioManager.toggleSfxEnabled();
@@ -769,6 +908,11 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    /**
+     * Toggles background music on or off and updates the music button label.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleToggleMusic(ActionEvent event) {
         audioManager.toggleMusicEnabled();
@@ -782,18 +926,35 @@ public class GuiController implements Initializable {
         gamePanel.requestFocus();
     }
 
+    /**
+     * Handles the exit button by stopping background music and closing
+     * the application.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleExit(ActionEvent event) {
         audioManager.stopBackgroundMusic();
         Platform.exit();
     }
 
+    /**
+     * Handles the game over "Play Again" button by starting a new game.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleGameOverPlayAgain(ActionEvent event) {
         ignoreNextMouseClick = true;
         newGame(event);
     }
 
+    /**
+     * Saves a new high score using the entered player name, if valid,
+     * then hides the high-score overlay and shows the game over overlay.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleHighScoreSave(javafx.event.ActionEvent event) {
         if (highScoreOverlay != null) {
@@ -808,6 +969,11 @@ public class GuiController implements Initializable {
         showGameOverOverlay();
     }
 
+    /**
+     * Skips saving a high score and proceeds directly to the game over overlay.
+     *
+     * @param event the action event
+     */
     @FXML
     private void handleHighScoreSkip(javafx.event.ActionEvent event) {
         if (highScoreOverlay != null) {
@@ -816,26 +982,55 @@ public class GuiController implements Initializable {
         showGameOverOverlay();
     }
 
+    /**
+     * Sets the input event listener used to communicate user input
+     * back to the game controller and model.
+     *
+     * @param eventListener the listener to register
+     */
     public void setEventListener(InputEventListener eventListener) {
         this.eventListener = eventListener;
     }
 
+    /**
+     * Binds the score label to the given score property.
+     *
+     * @param integerProperty the score property from the model
+     */
     public void bindScore(IntegerProperty integerProperty) {
         scoreLabel.textProperty().bind(integerProperty.asString());
     }
 
+    /**
+     * Binds the level label (if present) to the given level property.
+     *
+     * @param levelProperty the level property from the model
+     */
     public void bindLevel(IntegerProperty levelProperty) {
         if (levelLabel != null) {
             levelLabel.textProperty().bind(levelProperty.asString());
         }
     }
 
+    /**
+     * Binds the lines-cleared label (if present) to the given property.
+     *
+     * @param linesProperty the lines-cleared property from the model
+     */
     public void bindLines(IntegerProperty linesProperty) {
         if (linesLabel != null) {
             linesLabel.textProperty().bind(linesProperty.asString());
         }
     }
 
+    /**
+     * Handles visual and audio feedback when the player levels up.
+     * <p>
+     * Shows a "LEVEL X" notification, increases drop speed, and plays
+     * a level-up sound.
+     *
+     * @param newLevel the new level reached
+     */
     public void onLevelUp(int newLevel) {
         NotificationPanel notificationPanel =
             new NotificationPanel("LEVEL " + newLevel);
@@ -853,6 +1048,10 @@ public class GuiController implements Initializable {
         audioManager.playLevelUpSound();
     }
 
+    /**
+     * Populates and shows the game over overlay, including a mini high-score
+     * table if entries are available.
+     */
     private void showGameOverOverlay() {
         // update the mini high-score table
         if (highScoreListBox != null && highScoreManager != null) {
@@ -872,6 +1071,15 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Updates a single high-score label to show the entry at the given index,
+     * or hides it if no entry exists.
+     *
+     * @param label   label to update
+     * @param rank    human-readable rank (1-based)
+     * @param entries list of high-score entries
+     * @param index   zero-based index into the entries list
+     */
     private void setHighScoreLine(Label label, int rank,
                                   List<HighScoreEntry> entries, int index) {
         if (label == null) {
@@ -888,6 +1096,11 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Shows the high-score entry overlay pre-filled with the given final score.
+     *
+     * @param score the final score achieved in the last game
+     */
     private void showHighScoreOverlay(int score) {
         lastFinalScore = score;
 
@@ -903,6 +1116,13 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Handles the transition into the game over state.
+     * <p>
+     * Stops the drop timeline, stops music, plays the game-over sound,
+     * parses the final score from the HUD, and shows either the high-score
+     * entry overlay or the standard game over overlay.
+     */
     public void gameOver() {
         if (timeLine != null) {
             timeLine.stop();
@@ -936,10 +1156,23 @@ public class GuiController implements Initializable {
         }
     }
 
+    /**
+     * Injects the {@link GameController} and retrieves its high-score manager
+     * for use by the GUI.
+     *
+     * @param controller the game controller instance
+     */
     public void setGameController(GameController controller) {
         this.highScoreManager = controller.getHighScoreManager();
     }
 
+    /**
+     * Resets the UI for a new game: stops and resets the drop timeline,
+     * hides overlays, clears active and ghost bricks, resets game state
+     * via the event listener, and restarts background music.
+     *
+     * @param actionEvent the action event that triggered the new game, if any
+     */
     public void newGame(ActionEvent actionEvent) {
         // stop the drop timer if it exists and reset speed to level 1
         if (timeLine != null) {
@@ -1005,8 +1238,12 @@ public class GuiController implements Initializable {
         audioManager.startBackgroundMusic(isPause.get(), isGameOver.get());
     }
 
-    // Level 1 -> rate 1.0 (normal)
-    // Level 2 -> 1.2x, Level 3 -> 1.4x, etc. (capped so it doesn't get insane)
+    /**
+     * Adjusts the drop timeline speed based on the current level, increasing
+     * the rate by 25% per level up to a safety cap.
+     *
+     * @param level the current level
+     */
     private void updateDropSpeedForLevel(int level) {
         if (timeLine == null) {
             return;
