@@ -154,7 +154,7 @@ These tests were used throughout refactoring to ensure that structural changes (
   - Triggers the appropriate sound effect (`hard_drop.wav`).
 - Added **mouse and scroll controls**:
   - Mouse controls for horizontal movement and other interactions.
-  - Scroll wheel input to rotate or move pieces (depending on configuration).
+  - Scroll wheel input to rotate the current piece.
   - Ensured mouse controls stay aligned with the grid even after layout changes.
 
 **Game feedback and visual helpers**
@@ -170,7 +170,7 @@ These tests were used throughout refactoring to ensure that structural changes (
 
 - Added a **pause menu overlay**:
   - Semi-transparent overlay with pause controls.
-  - Buttons for resuming the game, restarting, or returning to the main menu (as applicable).
+  - Buttons for resuming the game, starting a new game, or exiting.
   - “Safe click” handling so accidental clicks outside the active area don’t cause odd behaviour.
   - Hover animations for buttons to give visual feedback.
 - Improved the **game over** flow:
